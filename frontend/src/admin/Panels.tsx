@@ -4,6 +4,8 @@ import { api, del, post } from "../lib/api";
 import type { Page, Sos } from "../lib/types";
 import { fmtDateTime } from "../lib/format";
 import { useBusMeta } from "../lib/queries";
+import { ShieldCheck } from "lucide-react";
+import { EmptyState, Pagination } from "../components/ui";
 
 interface Opt { value: number; label: string }
 
@@ -24,7 +26,7 @@ export function AuditLogPanel() {
   return (
     <section className="card" aria-labelledby="audit-h">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 id="audit-h" className="font-semibold">Audit log</h2>
+        <h2 id="audit-h" className="card-title">Audit log</h2>
         <label className="text-sm">
           <span className="sr-only">Filter by entity</span>
           <select className="input" value={entity} onChange={(e) => { setEntity(e.target.value); setPage(1); }}>
@@ -34,9 +36,9 @@ export function AuditLogPanel() {
         </label>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="table">
           <thead>
-            <tr className="text-left text-slate-500">
+            <tr>
               <th scope="col" className="py-1">When</th><th scope="col">Admin</th><th scope="col">Action</th>
               <th scope="col">Entity</th><th scope="col">Details</th>
             </tr>
@@ -54,11 +56,7 @@ export function AuditLogPanel() {
           </tbody>
         </table>
       </div>
-      <div className="mt-2 flex items-center justify-end gap-2 text-sm">
-        <button className="btn-ghost" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
-        <span>Page {page} / {pages}</span>
-        <button className="btn-ghost" disabled={page >= pages} onClick={() => setPage(page + 1)}>Next</button>
-      </div>
+      {pages > 1 && <Pagination page={page} pages={pages} onPage={setPage} />}
     </section>
   );
 }
@@ -75,10 +73,12 @@ export function SosFeedPanel() {
   const open = q.data?.items.filter((s) => s.status === "OPEN").length ?? 0;
   return (
     <section className="card" aria-labelledby="sos-h">
-      <h2 id="sos-h" className="mb-2 font-semibold">
+      <h2 id="sos-h" className="card-title mb-3">
         Live SOS feed {open > 0 && <span className="ml-1 rounded-full bg-red-600 px-2 text-xs text-white">{open} open</span>}
       </h2>
-      {q.data?.items.length === 0 && <p className="text-sm text-slate-500">No SOS alerts.</p>}
+      {q.data?.items.length === 0 && (
+        <EmptyState icon={ShieldCheck} title="All clear">No SOS alerts. New ones appear here instantly.</EmptyState>
+      )}
       <ul className="space-y-2" aria-live="polite">
         {q.data?.items.map((s) => (
           <li key={s.id} className={`flex flex-wrap items-center gap-2 rounded-lg p-2 text-sm ${s.status === "OPEN" ? "bg-red-50 dark:bg-red-900/30" : "bg-slate-100 dark:bg-slate-700"}`}>
@@ -118,7 +118,7 @@ export function SimDelayPanel() {
   };
   return (
     <section className="card space-y-3" aria-labelledby="sim-h">
-      <h2 id="sim-h" className="font-semibold">Simulate delay</h2>
+      <h2 id="sim-h" className="card-title">Simulate delay</h2>
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label htmlFor="sim-bus" className="label">Bus</label>
@@ -160,7 +160,7 @@ export function AnnouncementsPanel({ routes }: { routes: Opt[] }) {
   const remove = useMutation({ mutationFn: (id: number) => del(`/admin/announcements/${id}`), onSuccess: refresh });
   return (
     <section className="card space-y-3" aria-labelledby="ann-h">
-      <h2 id="ann-h" className="font-semibold">Announcements</h2>
+      <h2 id="ann-h" className="card-title">Announcements</h2>
       <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
         <label htmlFor="ann-route" className="label">Route (optional)</label>
         <select id="ann-route" className="input" value={routeId} onChange={(e) => setRouteId(Number(e.target.value) || "")}>
@@ -206,7 +206,7 @@ export function RouteStopsPanel({ routes, stops }: { routes: Opt[]; stops: Opt[]
   const remove = useMutation({ mutationFn: (r: RS) => del(`/admin/route-stops/${r.route_id}/${r.seq}`), onSuccess: refresh });
   return (
     <section className="card space-y-3" aria-labelledby="rs-h">
-      <h2 id="rs-h" className="font-semibold">Route stops (order)</h2>
+      <h2 id="rs-h" className="card-title">Route stops (order)</h2>
       <label htmlFor="rs-route" className="label">Route</label>
       <select id="rs-route" className="input" value={routeId} onChange={(e) => setRouteId(Number(e.target.value))}>
         {routes.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}

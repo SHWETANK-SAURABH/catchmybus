@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Bus, CalendarClock, ChartColumn, History, Radio, ShieldCheck, Waypoints } from "lucide-react";
 import { api } from "../lib/api";
-import type { Page } from "../lib/types";
+import type { Page as PageOf } from "../lib/types";
+import { Page, PageHeader } from "../components/ui";
 import CrudTable from "../admin/CrudTable";
 import Analytics from "../admin/Analytics";
 import { AnnouncementsPanel, AuditLogPanel, RouteStopsPanel, SimDelayPanel, SosFeedPanel } from "../admin/Panels";
@@ -11,12 +13,19 @@ type Named = { id: number; name?: string; bus_number?: string };
 const useOptions = (path: string) =>
   useQuery({
     queryKey: ["admin", path, "options"],
-    queryFn: () => api<Page<Named>>(`/admin/${path}?size=200`),
+    queryFn: () => api<PageOf<Named>>(`/admin/${path}?size=200`),
     select: (p) => p.items.map((x) => ({ value: x.id, label: x.name ?? x.bus_number ?? String(x.id) })),
   });
 
-const TABS = ["Live ops", "Analytics", "Fleet", "Network", "Schedules", "Audit log"] as const;
-type Tab = (typeof TABS)[number];
+const TABS = [
+  { name: "Live ops", icon: Radio },
+  { name: "Analytics", icon: ChartColumn },
+  { name: "Fleet", icon: Bus },
+  { name: "Network", icon: Waypoints },
+  { name: "Schedules", icon: CalendarClock },
+  { name: "Audit log", icon: History },
+] as const;
+type Tab = (typeof TABS)[number]["name"];
 
 /** Admin console (FR29-31): CRUD, announcements, SOS feed, delay simulation, audit log. */
 export default function Admin() {
@@ -26,13 +35,17 @@ export default function Admin() {
   const stops = useOptions("stops").data ?? [];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 p-4">
-      <h1 className="text-xl font-semibold">Admin console</h1>
-      <div role="tablist" aria-label="Admin sections" className="flex flex-wrap gap-1">
-        {TABS.map((t) => (
-          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
-            className={tab === t ? "btn-primary" : "btn-ghost"}>{t}</button>
-        ))}
+    <Page wide>
+      <PageHeader icon={ShieldCheck} title="Admin console" subtitle="Run the network, watch live incidents and review every change." />
+      <div className="-mx-4 mb-5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div role="tablist" aria-label="Admin sections" className="tabs flex-nowrap">
+          {TABS.map(({ name, icon: Icon }) => (
+            <button key={name} role="tab" aria-selected={tab === name} onClick={() => setTab(name)}
+              className={`tab whitespace-nowrap ${tab === name ? "tab-active" : ""}`}>
+              <Icon className="h-4 w-4" aria-hidden /> {name}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div role="tabpanel" aria-label={tab}>
@@ -92,6 +105,6 @@ export default function Admin() {
         )}
         {tab === "Audit log" && <AuditLogPanel />}
       </div>
-    </div>
+    </Page>
   );
 }

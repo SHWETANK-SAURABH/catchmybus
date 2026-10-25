@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { ArrowRight, CircleCheck, Ticket } from "lucide-react";
 import { api, post } from "../lib/api";
-import type { Page, Trip } from "../lib/types";
+import type { Page as PageOf, Trip } from "../lib/types";
 import { useBusMeta, useRouteDetails, useStops } from "../lib/queries";
 import { fmtDateTime } from "../lib/format";
+import { routeColor } from "../lib/colors";
+import { EmptyState, Page, PageHeader, Pagination } from "../components/ui";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -16,7 +19,7 @@ export default function Trips() {
   const [page, setPage] = useState(1);
   const q = useQuery({
     queryKey: ["trips", from, to, page],
-    queryFn: () => api<Page<Trip>>(`/trips?date_from=${from}&date_to=${to}&page=${page}&size=15`),
+    queryFn: () => api<PageOf<Trip>>(`/trips?date_from=${from}&date_to=${to}&page=${page}&size=15`),
   });
   const complete = useMutation({
     mutationFn: (id: number) => post(`/trips/${id}/complete`),
@@ -29,9 +32,10 @@ export default function Trips() {
   const pages = q.data ? Math.max(1, Math.ceil(q.data.total / 15)) : 1;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4">
-      <h1 className="text-xl font-semibold">Trip history</h1>
-      <form className="card flex flex-wrap items-end gap-3" onSubmit={(e) => e.preventDefault()} aria-label="Date range">
+    <Page>
+      <PageHeader icon={Ticket} title="Trip history" subtitle={`${q.data?.total ?? 0} trips in the selected period`} />
+
+      <form className="card mb-4 grid gap-3 sm:grid-cols-2" onSubmit={(e) => e.preventDefault()} aria-label="Date range">
         <div>
           <label htmlFor="from" className="label">From</label>
           <input id="from" type="date" className="input" value={from} max={to} onChange={(e) => { setFrom(e.target.value); setPage(1); }} />
@@ -40,43 +44,41 @@ export default function Trips() {
           <label htmlFor="to" className="label">To</label>
           <input id="to" type="date" className="input" value={to} min={from} onChange={(e) => { setTo(e.target.value); setPage(1); }} />
         </div>
-        <p className="text-sm text-slate-500">{q.data?.total ?? 0} trips</p>
       </form>
 
-      <section className="card overflow-x-auto">
-        {q.data?.items.length === 0 && <p className="text-sm text-slate-500">No trips in this period. Start one from a bus page.</p>}
-        {!!q.data?.items.length && (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500">
-                <th scope="col" className="py-1">Date</th><th scope="col">Route</th><th scope="col">Bus</th>
-                <th scope="col">From</th><th scope="col">To</th><th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {q.data.items.map((t) => (
-                <tr key={t.id} className="border-t border-slate-100 dark:border-slate-700">
-                  <td className="whitespace-nowrap py-1 pr-2">{fmtDateTime(t.trip_date)}</td>
-                  <td className="pr-2">{routes.find((r) => r.id === t.route_id)?.name ?? "—"}</td>
-                  <td className="pr-2">{t.bus_id ? <Link className="underline" to={`/bus/${t.bus_id}`}>{buses.find((b) => b.id === t.bus_id)?.bus_number}</Link> : "—"}</td>
-                  <td className="pr-2">{stop(t.board_stop_id)}</td>
-                  <td className="pr-2">{stop(t.alight_stop_id)}</td>
-                  <td>
-                    {t.status === "ONGOING"
-                      ? <button className="btn-ghost py-1" onClick={() => complete.mutate(t.id)}>Complete</button>
-                      : <span className="text-green-700 dark:text-green-300">Completed</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="card">
+        {q.data?.items.length === 0 ? (
+          <EmptyState icon={Ticket} title="No trips in this period">Start a trip from a bus page and it will show up here.</EmptyState>
+        ) : (
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+            {q.data?.items.map((t) => {
+              const route = routes.find((r) => r.id === t.route_id);
+              return (
+                <li key={t.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3 first:pt-0 last:pb-0">
+                  <span className="h-10 w-1 shrink-0 rounded-full" style={{ background: route ? routeColor(route.id) : "#94a3b8" }} aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
+                      {stop(t.board_stop_id)} <ArrowRight className="h-3.5 w-3.5 text-slate-400" aria-label="to" /> {stop(t.alight_stop_id)}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {fmtDateTime(t.trip_date)} · {route?.name ?? "—"}
+                      {t.bus_id && <> · <Link className="hover:underline" to={`/bus/${t.bus_id}`}>{buses.find((b) => b.id === t.bus_id)?.bus_number}</Link></>}
+                    </p>
+                  </div>
+                  {t.status === "ONGOING" ? (
+                    <button className="btn-ghost py-1.5" onClick={() => complete.mutate(t.id)}>Mark complete</button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                      <CircleCheck className="h-3.5 w-3.5" aria-hidden /> Completed
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
-        <div className="mt-2 flex items-center justify-end gap-2 text-sm">
-          <button className="btn-ghost" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
-          <span>Page {page} / {pages}</span>
-          <button className="btn-ghost" disabled={page >= pages} onClick={() => setPage(page + 1)}>Next</button>
-        </div>
+        {pages > 1 && <Pagination page={page} pages={pages} onPage={setPage} />}
       </section>
-    </div>
+    </Page>
   );
 }

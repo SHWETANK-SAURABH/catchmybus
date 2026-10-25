@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, del, post, put } from "../lib/api";
 import type { Page } from "../lib/types";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import Modal from "../components/Modal";
+import { Pagination } from "../components/ui";
 
 export interface Field {
   key: string;
@@ -58,38 +60,45 @@ export default function CrudTable({ path, title, fields, defaults }: {
 
   return (
     <section className="card" aria-labelledby={`${path}-h`}>
-      <div className="mb-3 flex items-center justify-between">
-        <h2 id={`${path}-h`} className="font-semibold">{title} {q.data && <span className="text-sm text-slate-500">({q.data.total})</span>}</h2>
-        <button className="btn-primary" onClick={() => { setError(null); setEditing("new"); }}>+ Add</button>
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <h2 id={`${path}-h`} className="card-title">
+          {title}
+          {q.data && <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">{q.data.total}</span>}
+        </h2>
+        <button className="btn-primary" onClick={() => { setError(null); setEditing("new"); }}>
+          <Plus className="h-4 w-4" aria-hidden /> Add
+        </button>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="-mx-5 overflow-x-auto px-5">
+        <table className="table">
           <thead>
-            <tr className="text-left text-slate-500">
-              <th scope="col" className="py-1 pr-2">ID</th>
-              {fields.map((f) => <th scope="col" key={f.key} className="pr-2">{f.label}</th>)}
+            <tr>
+              <th scope="col">ID</th>
+              {fields.map((f) => <th scope="col" key={f.key}>{f.label}</th>)}
               <th scope="col"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
             {q.data?.items.map((row) => (
-              <tr key={row.id} className="border-t border-slate-100 dark:border-slate-700">
-                <td className="py-1 pr-2">{row.id}</td>
-                {fields.map((f) => <td key={f.key} className="pr-2">{String(show(f, row[f.key]))}</td>)}
+              <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                <td className="tabular-nums text-slate-400">{row.id}</td>
+                {fields.map((f) => <td key={f.key}>{String(show(f, row[f.key]))}</td>)}
                 <td className="whitespace-nowrap text-right">
-                  <button className="mr-1 text-brand-600 underline dark:text-brand-100" onClick={() => { setError(null); setEditing(row); }}>Edit</button>
-                  <button className="text-red-600 underline" onClick={() => confirm(`Delete ${title.toLowerCase()} #${row.id}?`) && remove.mutate(row.id)}>Delete</button>
+                  <button className="icon-btn btn-subtle h-8 w-8" aria-label={`Edit ${title.toLowerCase()} ${row.id}`}
+                    onClick={() => { setError(null); setEditing(row); }}>
+                    <Pencil className="h-4 w-4" aria-hidden />
+                  </button>
+                  <button className="icon-btn btn-subtle h-8 w-8 hover:text-red-600 dark:hover:text-red-400" aria-label={`Delete ${title.toLowerCase()} ${row.id}`}
+                    onClick={() => confirm(`Delete ${title.toLowerCase()} #${row.id}?`) && remove.mutate(row.id)}>
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div className="mt-2 flex items-center justify-end gap-2 text-sm">
-        <button className="btn-ghost" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
-        <span>Page {page} / {pages}</span>
-        <button className="btn-ghost" disabled={page >= pages} onClick={() => setPage(page + 1)}>Next</button>
-      </div>
+      {pages > 1 && <Pagination page={page} pages={pages} onPage={setPage} />}
 
       {editing && (
         <EditModal title={`${editing === "new" ? "Add" : "Edit"} ${title.replace(/s$/, "")}`} fields={fields}

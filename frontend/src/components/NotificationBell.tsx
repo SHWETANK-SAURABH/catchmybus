@@ -1,8 +1,24 @@
 import { useEffect, useRef, useState } from "react";
+import { AlarmClock, Bell, BellOff, Megaphone, MapPin, Siren, X, type LucideIcon } from "lucide-react";
 import { useNotificationList, useNotifications } from "../lib/notifications";
 import { fmtTime } from "../lib/format";
 
-const icon: Record<string, string> = { ARRIVAL: "🚏", DELAY: "⏱️", ANNOUNCEMENT: "📢", SOS: "🆘" };
+const KIND: Record<string, { icon: LucideIcon; tone: string; label: string }> = {
+  ARRIVAL: { icon: MapPin, tone: "bg-brand-50 text-brand-600 dark:bg-brand-900/50 dark:text-brand-300", label: "Arrival" },
+  DELAY: { icon: AlarmClock, tone: "bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300", label: "Delay" },
+  ANNOUNCEMENT: { icon: Megaphone, tone: "bg-violet-50 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300", label: "Announcement" },
+  SOS: { icon: Siren, tone: "bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-300", label: "SOS" },
+};
+const kind = (type: string) => KIND[type] ?? KIND.ANNOUNCEMENT;
+
+function KindIcon({ type }: { type: string }) {
+  const k = kind(type);
+  return (
+    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${k.tone}`}>
+      <k.icon className="h-4 w-4" aria-hidden />
+    </span>
+  );
+}
 
 export function NotificationBell() {
   const { unread, markAllRead } = useNotifications();
@@ -20,30 +36,40 @@ export function NotificationBell() {
 
   return (
     <div className="relative" ref={ref}>
-      <button className="btn-ghost relative" aria-label={`Notifications, ${unread} unread`}
+      <button className="icon-btn btn-subtle relative" aria-label={`Notifications, ${unread} unread`}
         aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span aria-hidden>🔔</span>
+        <Bell className="h-5 w-5" aria-hidden />
         {unread > 0 && (
-          <span className="absolute -right-1 -top-1 rounded-full bg-red-600 px-1.5 text-xs text-white">{unread}</span>
+          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white ring-2 ring-white dark:ring-slate-900">
+            {unread > 99 ? "99+" : unread}
+          </span>
         )}
       </button>
       {open && (
-        <div className="card absolute right-0 mt-2 max-h-96 w-80 overflow-auto p-0" role="dialog" aria-label="Notifications">
-          <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-slate-700">
-            <strong className="text-sm">Notifications</strong>
-            <button className="text-xs text-brand-600 underline dark:text-brand-100" onClick={markAllRead}>Mark all read</button>
+        <div className="card fixed inset-x-3 top-16 max-h-[70vh] overflow-auto p-0 shadow-float sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96"
+          role="dialog" aria-label="Notifications">
+          <div className="sticky top-0 flex items-center justify-between border-b border-slate-200/80 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+            <p className="card-title">Notifications</p>
+            <button className="text-xs font-medium text-brand-600 hover:underline dark:text-brand-300" onClick={markAllRead}>Mark all read</button>
           </div>
           {list.data?.items.length ? (
-            <ul>
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {list.data.items.map((n) => (
-                <li key={n.id} className={`border-b border-slate-100 px-3 py-2 text-sm dark:border-slate-700 ${n.is_read ? "opacity-70" : ""}`}>
-                  <span aria-hidden>{icon[n.type] ?? "•"}</span> {n.message}
-                  <div className="text-xs text-slate-500">{fmtTime(n.created_at)}</div>
+                <li key={n.id} className="flex gap-3 px-4 py-3">
+                  <KindIcon type={n.type} />
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm ${n.is_read ? "text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-100"}`}>{n.message}</p>
+                    <p className="mt-0.5 text-xs text-slate-400">{kind(n.type).label} · {fmtTime(n.created_at)}</p>
+                  </div>
+                  {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-500" aria-label="Unread" />}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="p-3 text-sm text-slate-500">No notifications yet.</p>
+            <div className="flex flex-col items-center px-4 py-10 text-center">
+              <BellOff className="h-6 w-6 text-slate-400" aria-hidden />
+              <p className="mt-2 muted">No notifications yet. Set an alert from a bus page.</p>
+            </div>
           )}
         </div>
       )}
@@ -54,13 +80,17 @@ export function NotificationBell() {
 export function Toasts() {
   const { toasts, dismissToast } = useNotifications();
   return (
-    <div className="fixed bottom-4 right-4 z-[2000] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2" aria-live="polite">
+    <div className="fixed bottom-20 right-3 z-[2000] flex w-96 max-w-[calc(100vw-1.5rem)] flex-col gap-2 lg:bottom-6 lg:right-6" aria-live="polite">
       {toasts.map((t) => (
-        <div key={t.id} role="status"
-          className={`card flex items-start gap-2 border-l-4 ${t.type === "DELAY" || t.type === "SOS" ? "border-l-red-500" : "border-l-brand-500"}`}>
-          <span aria-hidden>{icon[t.type] ?? "•"}</span>
-          <p className="flex-1 text-sm">{t.message}</p>
-          <button aria-label="Dismiss notification" className="text-slate-500" onClick={() => dismissToast(t.id)}>✕</button>
+        <div key={t.id} role="status" className="card flex items-start gap-3 p-4 shadow-float">
+          <KindIcon type={t.type} />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{kind(t.type).label}</p>
+            <p className="mt-0.5 text-sm">{t.message}</p>
+          </div>
+          <button aria-label="Dismiss notification" className="icon-btn btn-subtle -mr-1 -mt-1 h-7 w-7" onClick={() => dismissToast(t.id)}>
+            <X className="h-4 w-4" aria-hidden />
+          </button>
         </div>
       ))}
     </div>

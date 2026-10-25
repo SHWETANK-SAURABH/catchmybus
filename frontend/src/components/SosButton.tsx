@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CircleCheck, Siren } from "lucide-react";
 import { post } from "../lib/api";
 import { useBusMeta } from "../lib/queries";
 import Modal from "./Modal";
@@ -31,12 +32,17 @@ export default function SosButton() {
 
   return (
     <>
-      <button className="btn-danger" onClick={() => setState("confirm")} aria-haspopup="dialog">SOS</button>
+      <button className="btn-danger h-10 px-3" onClick={() => setState("confirm")} aria-haspopup="dialog" aria-label="Send SOS alert">
+        <Siren className="h-4 w-4" aria-hidden /> <span className="hidden sm:inline">SOS</span>
+      </button>
       {state !== "idle" && (
         <Modal title={state === "sent" ? "Help is on the way" : "Send an SOS alert?"} onClose={() => setState("idle")}>
           {state === "sent" ? (
             <>
-              <p className="text-sm">✅ The control room has your alert and location. Stay where you are if it is safe.</p>
+              <div className="flex gap-3 rounded-xl bg-green-50 p-4 text-sm text-green-900 dark:bg-green-900/30 dark:text-green-100">
+                <CircleCheck className="h-5 w-5 shrink-0" aria-hidden />
+                The control room has your alert and location. Stay where you are if it is safe.
+              </div>
               <div className="mt-4 text-right"><button className="btn-primary" onClick={() => setState("idle")}>Close</button></div>
             </>
           ) : (

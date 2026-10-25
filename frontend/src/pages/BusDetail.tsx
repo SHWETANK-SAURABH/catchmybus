@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
+import { AlarmClock, BellPlus, Bus, Crosshair, Gauge, Ticket, Star, TriangleAlert, Users } from "lucide-react";
 import { api, post } from "../lib/api";
 import type { Crowd, Delay, Eta } from "../lib/types";
 import { useBusMeta, useFavourites, useRouteDetails } from "../lib/queries";
 import { useTracking } from "../hooks/useTracking";
-import { fmtDistance, fmtEta } from "../lib/format";
+import { fmtDistance } from "../lib/format";
+import { routeColor } from "../lib/colors";
 import LiveMap from "../components/LiveMap";
 import Modal from "../components/Modal";
 import CrowdBadge from "../components/CrowdBadge";
+import { EtaPill } from "../components/NearbyStops";
+import { EmptyState, StatTile, SuccessNote } from "../components/ui";
 
 /** Bus detail: live position, ETA per stop, delay, and Track / Set alert / Favourite actions. */
 export default function BusDetail() {
@@ -33,75 +37,102 @@ export default function BusDetail() {
   const stopName = (id: number) => route?.stops.find((s) => s.stop.id === id)?.stop.name ?? `Stop ${id}`;
   const maxDelay = delay.data?.total_delay_min ?? 0;
   const isFav = route ? !!favs.find("ROUTE", route.id) : false;
+  const color = route ? routeColor(route.id) : "#64748b";
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[1fr_380px]">
-      <div className="card h-[45vh] p-0 lg:h-[calc(100vh-90px)]">
-        <LiveMap className="h-full w-full rounded-xl" routes={route ? [route] : []}
+    <div className="mx-auto grid max-w-7xl gap-4 p-4 sm:p-6 lg:grid-cols-[1fr_400px]">
+      <div className="card h-[42vh] overflow-hidden p-0 lg:sticky lg:top-24 lg:h-[calc(100dvh-8rem)]">
+        <LiveMap className="h-full w-full" routes={route ? [route] : []}
           buses={Object.values(buses).filter((b) => b.route_id === route?.id)}
           highlightBusId={tracking ? busId : null} highlightRouteId={route?.id} />
       </div>
 
       <div className="space-y-4">
-        <section className="card space-y-3" aria-labelledby="bus-h">
-          <div>
-            <h1 id="bus-h" className="text-xl font-semibold">🚌 {meta?.bus_number ?? `Bus ${busId}`}</h1>
-            {route && <Link to={`/routes/${route.id}`} className="text-sm text-brand-600 underline dark:text-brand-100">{route.name}</Link>}
-            <div className="mt-1">
-              <CrowdBadge level={crowd.data?.level}
-                title={crowd.data ? `Predicted for ${crowd.data.hour}:00 (${crowd.data.source})` : undefined} />
+        <section className="card space-y-4" aria-labelledby="bus-h">
+          <div className="flex items-start gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white shadow-sm" style={{ background: color }}>
+              <Bus className="h-6 w-6" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h1 id="bus-h" className="text-xl font-bold tracking-tight">{meta?.bus_number ?? `Bus ${busId}`}</h1>
+              {route && (
+                <Link to={`/routes/${route.id}`} className="text-sm text-slate-500 hover:text-brand-600 hover:underline dark:text-slate-400">
+                  {route.name}
+                </Link>
+              )}
             </div>
+            <CrowdBadge level={crowd.data?.level}
+              title={crowd.data ? `Predicted for ${crowd.data.hour}:00 (${crowd.data.source})` : undefined} />
           </div>
+
           {live ? (
-            <dl className="grid grid-cols-3 gap-2 text-center text-sm">
-              <Stat label="Speed" value={`${Math.round(live.speed_kmh)} km/h`} />
-              <Stat label="Live load" value={`${live.load}/${live.capacity}`} />
-              <Stat label="Pred. delay" value={`${Math.round(maxDelay)} min`} warn={maxDelay >= 10} />
+            <dl className="grid grid-cols-3 gap-2">
+              <StatTile icon={Gauge} label="Speed" value={<>{Math.round(live.speed_kmh)}<span className="text-xs font-normal"> km/h</span></>} />
+              <StatTile icon={Users} label="Live load" value={<>{live.load}<span className="text-xs font-normal">/{live.capacity}</span></>} />
+              <StatTile icon={AlarmClock} label="Pred. delay" value={<>{Math.round(maxDelay)}<span className="text-xs font-normal"> min</span></>}
+                tone={maxDelay >= 10 ? "warn" : "default"} />
             </dl>
           ) : (
-            <p className="text-sm text-slate-500">This bus is not live right now.</p>
+            <p className="muted">This bus is not live right now.</p>
           )}
+
           {live?.delay_min ? (
-            <p role="alert" className="rounded-md bg-red-50 p-2 text-sm text-red-700 dark:bg-red-900/40 dark:text-red-200">
+            <p role="alert" className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-200">
+              <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden />
               Held by an incident: about {Math.round(live.delay_min)} min more.
             </p>
           ) : null}
-          <div className="flex flex-wrap gap-2">
+
+          <div className="grid grid-cols-2 gap-2">
             <button className={tracking ? "btn-primary" : "btn-ghost"} aria-pressed={tracking} onClick={() => setTracking(!tracking)}>
-              🎯 {tracking ? "Tracking" : "Track this bus"}
+              <Crosshair className="h-4 w-4" aria-hidden /> {tracking ? "Tracking" : "Track bus"}
             </button>
-            <button className="btn-ghost" onClick={() => setAlertOpen(true)} disabled={!route}>🔔 Set alert</button>
-            <button className="btn-ghost" onClick={() => setTripOpen(true)} disabled={!route}>🧾 Start trip</button>
+            <button className="btn-ghost" onClick={() => setAlertOpen(true)} disabled={!route}>
+              <BellPlus className="h-4 w-4" aria-hidden /> Set alert
+            </button>
+            <button className="btn-ghost" onClick={() => setTripOpen(true)} disabled={!route}>
+              <Ticket className="h-4 w-4" aria-hidden /> Start trip
+            </button>
             {route && (
               <button className="btn-ghost" aria-pressed={isFav} onClick={() => favs.toggle("ROUTE", route.id)}>
-                {isFav ? "★ Favourited" : "☆ Favourite"}
+                <Star className={`h-4 w-4 ${isFav ? "fill-amber-400 text-amber-400" : ""}`} aria-hidden /> {isFav ? "Favourited" : "Favourite"}
               </button>
             )}
           </div>
         </section>
 
         <section className="card" aria-labelledby="eta-h">
-          <h2 id="eta-h" className="mb-2 font-semibold">ETA per stop</h2>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500">
-                <th scope="col" className="py-1">Stop</th>
-                <th scope="col">Distance</th>
-                <th scope="col">ETA</th>
-                <th scope="col" title="Confidence">Conf.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {etas.data?.map((e) => (
-                <tr key={e.stop_id} className="border-t border-slate-100 dark:border-slate-700">
-                  <td className="py-1">{stopName(e.stop_id)}</td>
-                  <td>{fmtDistance(e.distance_m)}</td>
-                  <td className="font-medium">{fmtEta(e.eta_minutes)}</td>
-                  <td>{Math.round(e.confidence * 100)}%</td>
-                </tr>
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 id="eta-h" className="card-title">Upcoming stops</h2>
+            <span className="text-xs text-slate-400">updates every 4 s</span>
+          </div>
+          {etas.data?.length ? (
+            <ol>
+              {etas.data.map((e, i) => (
+                <li key={e.stop_id} className="relative flex gap-3 pb-5 last:pb-0">
+                  {i < etas.data.length - 1 && (
+                    <span className="absolute bottom-0 left-[11px] top-6 w-0.5 bg-slate-200 dark:bg-slate-700" aria-hidden />
+                  )}
+                  <span className="relative mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[3px] border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-900"
+                    style={i === 0 ? { borderColor: color } : undefined} aria-hidden>
+                    {i === 0 && <span className="h-2 w-2 rounded-full" style={{ background: color }} />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm ${i === 0 ? "font-semibold" : "font-medium"}`}>
+                      {stopName(e.stop_id)}
+                      {i === 0 && <span className="ml-1.5 text-xs font-normal text-slate-500">next stop</span>}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {fmtDistance(e.distance_m)} · {Math.round(e.confidence * 100)}% confidence
+                    </p>
+                  </div>
+                  <EtaPill minutes={e.eta_minutes} />
+                </li>
               ))}
-            </tbody>
-          </table>
+            </ol>
+          ) : (
+            <EmptyState icon={Bus} title="No live ETAs">This bus isn't sending positions right now.</EmptyState>
+          )}
         </section>
       </div>
 
@@ -111,15 +142,6 @@ export default function BusDetail() {
       {alertOpen && route && (
         <AlertModal busId={busId} stops={route.stops.map((s) => s.stop)} onClose={() => setAlertOpen(false)} />
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
-  return (
-    <div className="rounded-lg bg-slate-100 p-2 dark:bg-slate-700">
-      <dt className="text-xs text-slate-500 dark:text-slate-300">{label}</dt>
-      <dd className={`font-semibold ${warn ? "text-red-600 dark:text-red-400" : ""}`}>{value}</dd>
     </div>
   );
 }
@@ -137,11 +159,13 @@ function TripModal({ busId, stops, onClose }: { busId: number; stops: { id: numb
     <Modal title="Start a trip" onClose={onClose}>
       {state === "done" ? (
         <>
-          <p className="text-sm">✅ Trip started. You'll get delay alerts for this bus; see it under <Link className="underline" to="/trips">Trips</Link>.</p>
-          <div className="mt-4 text-right"><button className="btn-primary" onClick={onClose}>Done</button></div>
+          <SuccessNote>
+            Trip started. You'll get delay alerts for this bus; see it under <Link className="font-medium underline" to="/trips">Trips</Link>.
+          </SuccessNote>
+          <div className="mt-5 text-right"><button className="btn-primary" onClick={onClose}>Done</button></div>
         </>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
             <label htmlFor="trip-board" className="label">Boarding at</label>
             <select id="trip-board" className="input" value={board} onChange={(e) => setBoard(Number(e.target.value))}>
@@ -185,11 +209,11 @@ function AlertModal({ busId, stops, onClose }: { busId: number; stops: { id: num
     <Modal title="Set an arrival alert" onClose={onClose}>
       {state === "done" ? (
         <>
-          <p className="text-sm">✅ We'll notify you when this bus is {minutes} min away, and if it is delayed.</p>
-          <div className="mt-4 text-right"><button className="btn-primary" onClick={onClose}>Done</button></div>
+          <SuccessNote>We'll notify you when this bus is {minutes} min away, and if it is delayed.</SuccessNote>
+          <div className="mt-5 text-right"><button className="btn-primary" onClick={onClose}>Done</button></div>
         </>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
             <label htmlFor="alert-stop" className="label">Stop</label>
             <select id="alert-stop" className="input" value={stopId} onChange={(e) => setStopId(Number(e.target.value))}>
