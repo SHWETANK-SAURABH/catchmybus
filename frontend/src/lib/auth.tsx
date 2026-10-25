@@ -7,6 +7,7 @@ interface AuthState {
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
   register: (name: string, email: string, password: string, phone?: string) => Promise<User>;
+  demoLogin: (role: "COMMUTER" | "ADMIN") => Promise<User>;
   logout: () => void;
 }
 
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login: (email, password) => post<TokenOut>("/auth/login", { email, password }).then(accept),
     register: (name, email, password, phone) =>
       post<TokenOut>("/auth/register", { name, email, password, phone: phone || null }).then(accept),
+    demoLogin: (role) => post<TokenOut>("/auth/demo-login", { role }).then(accept),
     logout: () => {
       tokenStore.set(null);
       setUser(null);

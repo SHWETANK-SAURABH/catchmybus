@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     delay_alert_threshold_min: float = 10.0
     alert_check_seconds: float = 5.0
 
+    # One-click "demo commuter / demo admin" sign-in on the login page. Off unless enabled.
+    demo_login_enabled: bool = False
+
     seed_admin_email: str = "admin@catchmybus.com"
     seed_admin_password: str = ""
     seed_commuter_email: str = "arun@mail.com"

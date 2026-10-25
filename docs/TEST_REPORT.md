@@ -4,7 +4,7 @@
 
 | Suite | Command | Result |
 |---|---|---|
-| Backend (pytest) | `cd backend && pytest` | **64 passed**, 0 failed (≈77 s) |
+| Backend (pytest) | `cd backend && pytest` | **67 passed**, 0 failed (≈99 s) |
 | Frontend (Vitest) | `cd frontend && npm test` | **6 passed**, 0 failed |
 | AI tests without trained models (heuristic fallback) | `MODELS_DIR=<empty dir> pytest tests/test_ai.py` | 8 passed |
 | Load test (Locust, 50 users, 60 s) | `make loadtest` | 2906 requests, **0 failures**, p95 /eta 20 ms, /buses 40 ms |
@@ -19,6 +19,7 @@
 |---|---|---|---|---|
 | FT01 | FR01 Register | Valid registration returns a JWT and creates a COMMUTER; duplicate email → 409; invalid input → 422 | `test_auth.py::test_register_creates_commuter_with_bcrypt_hash`, `test_register_duplicate_email_conflict`, `test_register_validates_input` | Pass |
 | FT02 | FR02 Login | Correct credentials → token and `/auth/me`; wrong password → 401; bad/missing token → 401 | `test_login_and_me`, `test_login_wrong_password`, `test_me_requires_valid_token` | Pass |
+| FT02a | Demo sign-in | Off by default (404); when enabled, signs in only the seeded commuter/admin; invalid role → 422 | `test_demo_login_disabled_by_default`, `test_demo_login_signs_in_seeded_accounts` | Pass |
 | FT03 | FR28 Role-based access | A commuter gets **403** on every `/admin` GET and write; anonymous → 401 | `test_admin.py::test_commuter_gets_403_on_admin_endpoints` (10 endpoints), `test_commuter_cannot_write_admin`, `test_anonymous_gets_401` | Pass |
 | FT04 | FR06/FR10 Live tracking | Buses move along the route, stay on the polyline and turn round at the ends; positions reach the cache | `test_geo_sim.py::test_simulator_moves_buses_and_writes_cache`, `test_simulator_stays_on_route_and_turns_around` | Pass |
 | FT05 | FR07 Route search | Katpadi → CMC finds R1; Gandhi Nagar → Green Circle finds R1 and R2 | `test_eta_alerts.py::test_route_search` | Pass |
@@ -64,5 +65,5 @@
 | Crowd differs at 08:30 vs 14:00 via the demo-time override | Pass (FT11) |
 | Commuter gets 403 on /admin; admin edits appear in the audit log with timestamp and admin id | Pass (FT03, NFT04) |
 | A commuter's SOS appears live in the admin console | Pass (FT15, NFT10) |
-| pytest passes with ≥ 20 tests across auth, roles, ETA math, radius, alert thresholds, audit | Pass (64 tests) |
+| pytest passes with ≥ 20 tests across auth, roles, ETA math, radius, alert thresholds, audit | Pass (67 tests) |
 | Zero hardcoded secrets | Pass: secrets and passwords come only from `.env` |

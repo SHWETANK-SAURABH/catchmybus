@@ -138,18 +138,26 @@ the source code.
 These are the defaults in `.env.example` (`SEED_ADMIN_PASSWORD`, `SEED_COMMUTER_PASSWORD`).
 Both roles sign in through the same login form, and the server decides the role.
 
+**One-click demo sign-in.** With `DEMO_LOGIN_ENABLED=true` (the default in `.env.example`),
+the login page shows **Demo commuter** and **Demo admin** buttons, so no one has to type
+credentials during a demo. The buttons call `POST /auth/demo-login`, which only signs in
+the two seeded accounts. The frontend never contains a password. Set
+`DEMO_LOGIN_ENABLED=false` for any real deployment, and the buttons disappear.
+
+![Login with demo buttons](docs/screenshots/01-login.png)
+
 ## 5-minute demo script
 
 Open two browser windows side by side: **A** (normal) and **B** (private/incognito).
 
 | Time | Step | What to show |
 |---|---|---|
-| 0:00 | **A:** log in as `arun@mail.com`. | Live map: six buses glide along three coloured routes around Katpadi and Vellore. |
+| 0:00 | **A:** click **Demo commuter** on the login page (or sign in as `arun@mail.com`). | Live map: six buses glide along three coloured routes around Katpadi and Vellore. |
 | 0:30 | **A:** click **Use demo location** and open *Gandhi Nagar*. | Nearby stops within the radius, with live arrivals per bus. Click **Use my location** to show the privacy note and consent dialog first. |
 | 1:00 | **A:** click a bus marker. | Bus page: crowd badge, live speed and load, predicted delay, and an ETA per stop that falls every few seconds as the bus approaches. |
 | 1:30 | **A:** in the header, switch **Demo time** between *Weekday 08:30 (peak)* and *Weekday 14:00*. | The crowd badges change (more *High* at 08:30). The coloured dots on the map change too. |
 | 2:00 | **A:** on the bus page, click **Set alert**, pick a stop about 6-8 min away and set 5 min. | When the ETA reaches 5 min, the bell count goes up and a toast appears. |
-| 2:30 | **B:** log in as `admin@catchmybus.com`, go to **Admin → Live ops**, choose the same bus, 15 min, **Inject delay**. | Within about 5 s, window **A** gets a *delay* toast. The bus stops on the map and its ETA jumps by about 15 min. |
+| 2:30 | **B:** click **Demo admin**, go to **Admin → Live ops**, choose the same bus, 15 min, **Inject delay**. | Within about 5 s, window **A** gets a *delay* toast. The bus stops on the map and its ETA jumps by about 15 min. |
 | 3:15 | **A:** go back to the map, pick *Gandhi Nagar → Green Circle*, and click **Search routes**. | Best-route ranking with score bars (time, walking, crowding, delay risk). |
 | 3:45 | **A:** press **SOS** and then **Send SOS**. | Success state in **A**. In **B** the SOS appears in the live feed and as a toast. Click **Mark resolved**. |
 | 4:15 | **B:** go to **Fleet**, edit a bus's capacity, then open **Audit log**. | The edit shows with timestamp, admin id and the before/after change. Swagger also shows `/admin/*` returning **403** for a commuter token. |
@@ -159,7 +167,7 @@ Screenshots of every step are in [docs/screenshots](docs/screenshots).
 
 ## API summary
 
-All endpoints except `/health`, `/auth/register` and `/auth/login` need
+All endpoints except `/health` and the `/auth/register`, `/auth/login` and `/auth/demo*` endpoints need
 `Authorization: Bearer <JWT>`. `/admin/*` needs the ADMIN role and returns 403 for anyone
 else. List endpoints accept `?page=&size=`. The AI endpoints read an optional
 `X-Demo-Time` header: `08:30` means that time on a weekday, and `Sat 12:00` picks a day.
@@ -167,7 +175,7 @@ The full interactive spec is at `/docs`.
 
 | Area | Endpoints |
 |---|---|
-| Auth | `POST /auth/register`, `POST /auth/login` (rate limited), `GET /auth/me` |
+| Auth | `POST /auth/register`, `POST /auth/login` (rate limited), `GET /auth/me`, `GET /auth/demo`, `POST /auth/demo-login` (only when `DEMO_LOGIN_ENABLED=true`) |
 | Tracking | `GET /buses`, `GET /buses/live`, `GET /buses/{id}/location`, `WS /ws/tracking?token=`, `WS /ws/notifications?token=` |
 | Routes & stops | `GET /routes`, `GET /routes/all/detail`, `GET /routes/{id}`, `GET /routes/search?source=&destination=`, `GET /stops`, `GET /stops/nearby?lat=&lon=&radius_m=` |
 | ETA | `GET /eta?bus_id=&stop_id=`, `GET /eta/bus/{id}`, `GET /stops/{id}/arrivals` |
@@ -236,7 +244,7 @@ Most errors are between neighbouring classes. LOW and HIGH are almost never conf
 
 ## Testing and performance
 
-- **Backend:** `cd backend && pytest` runs **64 tests**. They cover auth and bcrypt,
+- **Backend:** `cd backend && pytest` runs **67 tests**. They cover auth and bcrypt,
   rate limiting, 403 role guards on every admin endpoint, the ETA math, the nearby-stop
   radius, route search, alert thresholds and hysteresis, audit logging (including rollback
   on failure), SOS, analytics and the AI scoring.

@@ -71,3 +71,22 @@ def test_api_prefix_is_stripped_for_vercel_routing(client, commuter_headers):
     assert client.get("/apix/health").status_code == 404  # only the exact prefix is stripped
     with client.websocket_connect("/api/ws/tracking?token=" + commuter_headers["Authorization"].split()[1]) as ws:
         assert ws.receive_json()["type"] == "positions"
+
+
+def test_demo_login_disabled_by_default(client):
+    assert client.get("/auth/demo").json() == {"enabled": False}
+    assert client.post("/auth/demo-login", json={"role": "COMMUTER"}).status_code == 404
+
+
+def test_demo_login_signs_in_seeded_accounts(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "demo_login_enabled", True)
+    assert client.get("/auth/demo").json() == {"enabled": True}
+    r = client.post("/auth/demo-login", json={"role": "COMMUTER"})
+    assert r.status_code == 200 and r.json()["user"]["email"] == "arun@mail.com"
+    admin = client.post("/auth/demo-login", json={"role": "ADMIN"}).json()
+    assert admin["user"]["role"] == "ADMIN"
+    h = {"Authorization": f"Bearer {admin['access_token']}"}
+    assert client.get("/admin/buses", headers=h).status_code == 200
+    assert client.post("/auth/demo-login", json={"role": "ROOT"}).status_code == 422

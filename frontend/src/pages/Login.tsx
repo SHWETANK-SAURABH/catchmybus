@@ -1,22 +1,27 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import type { User } from "../lib/types";
 
 /** One form for commuters and admins; the role comes back from the server (FR02, FR28). */
 export default function Login() {
-  const { login } = useAuth();
+  const { login, demoLogin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  // The server says whether one-click demo sign-in is switched on (DEMO_LOGIN_ENABLED).
+  const demo = useQuery({ queryKey: ["demo-login"], queryFn: () => api<{ enabled: boolean }>("/auth/demo"), retry: false });
+
+  async function signIn(attempt: () => Promise<User>) {
     setBusy(true);
     setError(null);
     try {
-      const user = await login(email, password);
+      const user = await attempt();
       navigate(user.role === "ADMIN" ? "/admin" : "/");
     } catch (err) {
       setError((err as Error).message);
@@ -24,6 +29,11 @@ export default function Login() {
       setBusy(false);
     }
   }
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    signIn(() => login(email, password));
+  };
 
   return (
     <AuthCard title="Sign in to CatchMyBus">
@@ -43,6 +53,21 @@ export default function Login() {
           {busy ? "Signing in…" : "Sign in"}
         </button>
       </form>
+      {demo.data?.enabled && (
+        <section aria-labelledby="demo-h" className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-700">
+          <h2 id="demo-h" className="mb-2 text-center text-sm font-medium text-slate-600 dark:text-slate-300">
+            Just looking? Try the demo
+          </h2>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" className="btn-ghost" disabled={busy} onClick={() => signIn(() => demoLogin("COMMUTER"))}>
+              🧑 Demo commuter
+            </button>
+            <button type="button" className="btn-ghost" disabled={busy} onClick={() => signIn(() => demoLogin("ADMIN"))}>
+              🛠️ Demo admin
+            </button>
+          </div>
+        </section>
+      )}
       <p className="mt-4 text-center text-sm">
         New here? <Link to="/register" className="font-medium text-brand-600 underline dark:text-brand-100">Create an account</Link>
       </p>

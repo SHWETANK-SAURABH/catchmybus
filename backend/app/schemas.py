@@ -31,6 +31,10 @@ class LoginIn(BaseModel):
     password: str
 
 
+class DemoLoginIn(BaseModel):
+    role: Literal["COMMUTER", "ADMIN"]
+
+
 class UserOut(ORM):
     id: int
     name: str
