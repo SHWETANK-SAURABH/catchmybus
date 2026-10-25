@@ -5,7 +5,7 @@ time - used in the demo to show peak vs off-peak crowding:
     "08:30"      -> 08:30 on a weekday (today if it is a weekday, else the coming Monday)
     "Sat 12:00"  -> 12:00 on the coming Saturday (Mon..Sun accepted)
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from fastapi import Header
@@ -18,6 +18,16 @@ DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 def now_local() -> datetime:
     """Current wall-clock time in the configured timezone (naive datetime)."""
     return datetime.now(ZoneInfo(get_settings().timezone)).replace(tzinfo=None)
+
+
+def to_local(utc_naive: datetime) -> datetime:
+    """Convert a naive UTC timestamp (as stored in the DB) to naive local time."""
+    return utc_naive.replace(tzinfo=timezone.utc).astimezone(ZoneInfo(get_settings().timezone)).replace(tzinfo=None)
+
+
+def to_utc(local_naive: datetime) -> datetime:
+    """Convert a naive local timestamp to naive UTC for storage."""
+    return local_naive.replace(tzinfo=ZoneInfo(get_settings().timezone)).astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def parse_demo_time(value: str | None, base: datetime | None = None) -> datetime:

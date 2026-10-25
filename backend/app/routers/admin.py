@@ -47,6 +47,7 @@ from ..schemas import (
     UserOut,
 )
 from ..security import require_admin
+from ..services.analytics import analytics as compute_analytics
 from ..services.audit import record, row_to_dict
 from ..services.notifications import notify
 
@@ -245,6 +246,12 @@ def audit_log(params: PageParams = Depends(), entity: str | None = None, db: Ses
     if entity:
         stmt = stmt.where(AuditLog.entity == entity)
     return paginate(db, stmt, params)
+
+
+@router.get("/analytics")
+def analytics(days: int = Query(14, ge=1, le=90), db: Session = Depends(get_db)):
+    """Ridership by route and hour, avg delay by route, crowd distribution, SOS count."""
+    return compute_analytics(db, days)
 
 
 @router.get("/users", response_model=Page[UserOut])

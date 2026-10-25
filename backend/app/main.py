@@ -13,7 +13,7 @@ from .db import SessionLocal, init_db
 from .logging_conf import setup_logging
 from .models import User
 from .ml.predictor import predictor
-from .routers import admin, ai, auth, eta, favourites, notifications, routes, sos, stops, tracking
+from .routers import admin, ai, auth, eta, favourites, notifications, routes, sos, stops, tracking, trips
 from .services.alert_engine import alert_engine
 from .services.crowd_job import crowd_job
 from .services.hub import hub
@@ -91,5 +91,6 @@ app.include_router(eta.router)
 app.include_router(favourites.router)
 app.include_router(notifications.router)
 app.include_router(sos.router)
+app.include_router(trips.router)
 app.include_router(ai.router)
 app.include_router(admin.router)

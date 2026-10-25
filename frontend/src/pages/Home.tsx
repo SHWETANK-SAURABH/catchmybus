@@ -6,7 +6,7 @@ import SearchBar from "../components/SearchBar";
 import { useTracking } from "../hooks/useTracking";
 import { useRouteDetails } from "../lib/queries";
 import { useCrowdAll } from "../components/CrowdBadge";
-import { crowdStyle } from "../lib/colors";
+import { crowdStyle, routeColor } from "../lib/colors";
 
 /** Full-screen live map with a search + nearby-stops panel (bottom sheet on phones). */
 export default function Home() {
@@ -35,6 +35,7 @@ export default function Home() {
             </button>
           </div>
           <div className={panelOpen ? "space-y-4" : "hidden sm:block sm:space-y-4"}>
+            <MapLegend routes={(routes.data ?? []).map((r) => ({ id: r.id, name: r.name }))} />
             <SearchBar />
             <hr className="border-slate-200 dark:border-slate-700" />
             <NearbyStops location={location} onLocation={setLocation} />
@@ -42,5 +43,27 @@ export default function Home() {
         </div>
       </aside>
     </div>
+  );
+}
+
+/** Route colours and the crowd dot meaning, so identity is never colour-alone. */
+function MapLegend({ routes }: { routes: { id: number; name: string }[] }) {
+  return (
+    <details className="text-xs">
+      <summary className="cursor-pointer font-medium">Legend</summary>
+      <ul className="mt-1 space-y-0.5">
+        {routes.map((r) => (
+          <li key={r.id} className="flex items-center gap-2">
+            <span className="h-1 w-5 rounded" style={{ background: routeColor(r.id) }} aria-hidden /> {r.name}
+          </li>
+        ))}
+        {(["LOW", "MEDIUM", "HIGH"] as const).map((l) => (
+          <li key={l} className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full border border-white" style={{ background: crowdStyle[l].dot }} aria-hidden />
+            Bus dot: {crowdStyle[l].label} crowd
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

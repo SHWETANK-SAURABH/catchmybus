@@ -12,6 +12,7 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
+from .clock import now_local, to_utc
 from .config import get_settings
 from .db import Base, SessionLocal, engine
 from .geo import cumulative_distances
@@ -101,7 +102,7 @@ def seed(db: Session, with_history: bool = True) -> dict:
 def _seed_past_activity(db: Session, rng: random.Random, user: User, routes, buses) -> int:
     """Two weeks of synthetic trips, delays and crowd readings so the analytics charts
     have something to show on a fresh install. Clearly synthetic (see README)."""
-    now = datetime.now().replace(minute=0, second=0, microsecond=0)
+    now = now_local().replace(minute=0, second=0, microsecond=0)  # patterns use local hours; stored as UTC
     bus_by_route = {r.id: [b for b in buses if b.route_id == r.id] for r in routes}
     n = 0
     for day in range(14, 0, -1):
@@ -118,14 +119,14 @@ def _seed_past_activity(db: Session, rng: random.Random, user: User, routes, bus
                     alight = rng.randrange(board + 1, len(stops))
                     db.add(Trip(user_id=user.id, bus_id=bus.id, route_id=route.id,
                                 board_stop_id=stops[board].stop_id, alight_stop_id=stops[alight].stop_id,
-                                trip_date=date.replace(hour=hour, minute=rng.randrange(60)),
+                                trip_date=to_utc(date.replace(hour=hour, minute=rng.randrange(60))),
                                 status="COMPLETED"))
                     n += 1
                 # One position/delay sample and crowd reading per bus-hour.
                 frac = patterns.load_fraction(hour, dow, route.id, 3) + rng.gauss(0, 0.08)
                 delay = patterns.expected_delay(hour, dow, route.id, 3000, 20, rng.uniform(0.9, 1.4))
                 st = stops[rng.randrange(len(stops))].stop
-                ts = date.replace(hour=hour, minute=30)
+                ts = to_utc(date.replace(hour=hour, minute=30))
                 db.add(BusPositionHistory(bus_id=bus.id, lat=st.lat, lon=st.lon, speed=20.0,
                                           delay_min=round(max(0, delay + rng.gauss(0, 1)), 2),
                                           load=int(max(0, frac) * bus.capacity), recorded_at=ts))

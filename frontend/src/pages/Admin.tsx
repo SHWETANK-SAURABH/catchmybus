@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { Page } from "../lib/types";
 import CrudTable from "../admin/CrudTable";
+import Analytics from "../admin/Analytics";
 import { AnnouncementsPanel, AuditLogPanel, RouteStopsPanel, SimDelayPanel, SosFeedPanel } from "../admin/Panels";
 
 type Named = { id: number; name?: string; bus_number?: string };
@@ -14,7 +15,7 @@ const useOptions = (path: string) =>
     select: (p) => p.items.map((x) => ({ value: x.id, label: x.name ?? x.bus_number ?? String(x.id) })),
   });
 
-const TABS = ["Live ops", "Fleet", "Network", "Schedules", "Audit log"] as const;
+const TABS = ["Live ops", "Analytics", "Fleet", "Network", "Schedules", "Audit log"] as const;
 type Tab = (typeof TABS)[number];
 
 /** Admin console (FR29-31): CRUD, announcements, SOS feed, delay simulation, audit log. */
@@ -44,6 +45,7 @@ export default function Admin() {
             </div>
           </div>
         )}
+        {tab === "Analytics" && <Analytics />}
         {tab === "Fleet" && (
           <div className="space-y-4">
             <CrudTable path="buses" title="Buses" defaults={{ capacity: 50, status: "ACTIVE" }} fields={[

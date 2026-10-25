@@ -21,6 +21,7 @@ export default function BusDetail() {
   const favs = useFavourites();
   const [tracking, setTracking] = useState(true);
   const [alertOpen, setAlertOpen] = useState(false);
+  const [tripOpen, setTripOpen] = useState(false);
 
   const etas = useQuery({
     queryKey: ["eta-bus", busId],
@@ -70,6 +71,7 @@ export default function BusDetail() {
               🎯 {tracking ? "Tracking" : "Track this bus"}
             </button>
             <button className="btn-ghost" onClick={() => setAlertOpen(true)} disabled={!route}>🔔 Set alert</button>
+            <button className="btn-ghost" onClick={() => setTripOpen(true)} disabled={!route}>🧾 Start trip</button>
             {route && (
               <button className="btn-ghost" aria-pressed={isFav} onClick={() => favs.toggle("ROUTE", route.id)}>
                 {isFav ? "★ Favourited" : "☆ Favourite"}
@@ -103,6 +105,9 @@ export default function BusDetail() {
         </section>
       </div>
 
+      {tripOpen && route && (
+        <TripModal busId={busId} stops={route.stops.map((s) => s.stop)} onClose={() => setTripOpen(false)} />
+      )}
       {alertOpen && route && (
         <AlertModal busId={busId} stops={route.stops.map((s) => s.stop)} onClose={() => setAlertOpen(false)} />
       )}
@@ -116,6 +121,47 @@ function Stat({ label, value, warn }: { label: string; value: string; warn?: boo
       <dt className="text-xs text-slate-500 dark:text-slate-300">{label}</dt>
       <dd className={`font-semibold ${warn ? "text-red-600 dark:text-red-400" : ""}`}>{value}</dd>
     </div>
+  );
+}
+
+function TripModal({ busId, stops, onClose }: { busId: number; stops: { id: number; name: string }[]; onClose: () => void }) {
+  const unique = [...new Map(stops.map((s) => [s.id, s])).values()];
+  const [board, setBoard] = useState(unique[0]?.id ?? 0);
+  const [alight, setAlight] = useState(unique[unique.length - 1]?.id ?? 0);
+  const [state, setState] = useState<"idle" | "done" | string>("idle");
+  const save = () =>
+    post("/trips/start", { bus_id: busId, board_stop_id: board, alight_stop_id: alight })
+      .then(() => setState("done"))
+      .catch((e) => setState((e as Error).message));
+  return (
+    <Modal title="Start a trip" onClose={onClose}>
+      {state === "done" ? (
+        <>
+          <p className="text-sm">✅ Trip started. You'll get delay alerts for this bus; see it under <Link className="underline" to="/trips">Trips</Link>.</p>
+          <div className="mt-4 text-right"><button className="btn-primary" onClick={onClose}>Done</button></div>
+        </>
+      ) : (
+        <div className="space-y-3">
+          <div>
+            <label htmlFor="trip-board" className="label">Boarding at</label>
+            <select id="trip-board" className="input" value={board} onChange={(e) => setBoard(Number(e.target.value))}>
+              {unique.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="trip-alight" className="label">Getting off at</label>
+            <select id="trip-alight" className="input" value={alight} onChange={(e) => setAlight(Number(e.target.value))}>
+              {unique.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          {state !== "idle" && <p role="alert" className="text-sm text-red-600">{state}</p>}
+          <div className="flex justify-end gap-2">
+            <button className="btn-ghost" onClick={onClose}>Cancel</button>
+            <button className="btn-primary" onClick={save} disabled={board === alight}>Start trip</button>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
 
