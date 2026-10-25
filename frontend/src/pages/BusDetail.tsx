@@ -55,7 +55,7 @@ export default function BusDetail() {
           {live ? (
             <dl className="grid grid-cols-3 gap-2 text-center text-sm">
               <Stat label="Speed" value={`${Math.round(live.speed_kmh)} km/h`} />
-              <Stat label="Load" value={`${live.load}/${live.capacity}`} />
+              <Stat label="Live load" value={`${live.load}/${live.capacity}`} />
               <Stat label="Pred. delay" value={`${Math.round(maxDelay)} min`} warn={maxDelay >= 10} />
             </dl>
           ) : (

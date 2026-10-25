@@ -18,7 +18,7 @@ export default function Home() {
   const [panelOpen, setPanelOpen] = useState(true);
 
   return (
-    <div className="relative h-[calc(100vh-57px)]">
+    <div className="relative h-[calc(100dvh-106px)] sm:h-[calc(100dvh-57px)]">
       <LiveMap routes={routes.data ?? []} buses={Object.values(buses)} userLocation={location}
         onBusClick={(b) => navigate(`/bus/${b.bus_id}`)}
         busDot={(b) => (crowd?.[b.bus_id] ? crowdStyle[crowd[b.bus_id].level].dot : undefined)} />

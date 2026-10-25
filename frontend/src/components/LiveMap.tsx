@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, ZoomControl, useMap } from "react-leaflet";
 import L from "leaflet";
 import type { BusLocation, RouteDetail, Stop } from "../lib/types";
 import { routeColor } from "../lib/colors";
@@ -22,7 +22,8 @@ interface Props {
 export default function LiveMap(p: Props) {
   return (
     <MapContainer center={VELLORE_CENTER} zoom={14} className={p.className ?? "h-full w-full"}
-      aria-label="Live bus map">
+      zoomControl={false} aria-label="Live bus map">
+      <ZoomControl position="topright" />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
