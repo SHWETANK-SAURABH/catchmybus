@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, API_URL } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type { User } from "../lib/types";
 
@@ -53,6 +53,12 @@ export default function Login() {
           {busy ? "Signing in…" : "Sign in"}
         </button>
       </form>
+      {demo.isError && (
+        <p role="alert" className="mt-4 rounded-md bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">
+          Can't reach the CatchMyBus server at <code>{API_URL}</code>. Start the backend
+          (<code>uvicorn app.main:app --port 8000</code> in <code>backend/</code>) and reload.
+        </p>
+      )}
       {demo.data?.enabled && (
         <section aria-labelledby="demo-h" className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-700">
           <h2 id="demo-h" className="mb-2 text-center text-sm font-medium text-slate-600 dark:text-slate-300">
