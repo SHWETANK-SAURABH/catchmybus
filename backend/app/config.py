@@ -39,6 +39,8 @@ class Settings(BaseSettings):
 
     # One-click "demo commuter / demo admin" sign-in on the login page. Off unless enabled.
     demo_login_enabled: bool = False
+    # "Skip sign-in" on the login page: creates a temporary guest commuter. Off unless enabled.
+    guest_login_enabled: bool = False
 
     seed_admin_email: str = "admin@catchmybus.com"
     seed_admin_password: str = ""

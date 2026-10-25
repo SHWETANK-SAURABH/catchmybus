@@ -1,4 +1,6 @@
 """Authentication service: register, login, current user (FR01, FR02, FR28)."""
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -40,8 +42,29 @@ def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
 
 @router.get("/demo")
 def demo_status():
-    """Tells the login page whether to show the one-click demo buttons."""
-    return {"enabled": get_settings().demo_login_enabled}
+    """Tells the login page which shortcuts to show: demo accounts and/or "Skip sign-in"."""
+    s = get_settings()
+    return {"enabled": s.demo_login_enabled, "guest": s.guest_login_enabled}
+
+
+@router.post("/guest", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
+def guest_login(request: Request, db: Session = Depends(get_db)):
+    """Skip sign-in: create a throwaway COMMUTER account and sign it in.
+
+    Each guest gets their own account, so favourites/trips/alerts aren't shared between
+    visitors. The password is random and never returned, so the account can't be signed
+    into again. Only works when GUEST_LOGIN_ENABLED=true; shares the login rate limit.
+    """
+    if not get_settings().guest_login_enabled:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Guest access is disabled")
+    ip = request.client.host if request.client else "unknown"
+    if not login_limiter.allow(ip):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many attempts, try again in a minute")
+    user = User(name="Guest", email=f"guest-{secrets.token_hex(6)}@guest.catchmybus.local", role="COMMUTER",
+                password_hash=hash_password(secrets.token_urlsafe(24)))
+    db.add(user)
+    db.commit()
+    return TokenOut(access_token=create_token(user), user=UserOut.model_validate(user))
 
 
 @router.post("/demo-login", response_model=TokenOut)

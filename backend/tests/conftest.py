@@ -6,6 +6,7 @@ os.environ.update({
     "SIMULATOR_ENABLED": "false",
     "SIM_RANDOM_DELAYS": "false",
     "DEMO_LOGIN_ENABLED": "false",
+    "GUEST_LOGIN_ENABLED": "false",
     "JWT_SECRET": "test-secret-not-for-production",
     "SEED_ADMIN_PASSWORD": "AdminPass1",
     "SEED_COMMUTER_PASSWORD": "ArunPass1",

@@ -144,6 +144,12 @@ credentials during a demo. The buttons call `POST /auth/demo-login`, which only 
 the two seeded accounts. The frontend never contains a password. Set
 `DEMO_LOGIN_ENABLED=false` for any real deployment, and the buttons disappear.
 
+**Skip sign-in.** With `GUEST_LOGIN_ENABLED=true` (also on in `.env.example`), the login
+page offers **Skip sign-in**. Each visitor gets their own temporary guest commuter account
+(`POST /auth/guest`), so one guest's favourites and trips never show up for the next. Guests
+can use every commuter feature but never the admin console, and the header offers them
+**Create account**. Set `GUEST_LOGIN_ENABLED=false` to turn it off.
+
 ![Login with demo buttons](docs/screenshots/01-login.png)
 
 ## 5-minute demo script
@@ -167,7 +173,7 @@ Screenshots of every step are in [docs/screenshots](docs/screenshots).
 
 ## API summary
 
-All endpoints except `/health` and the `/auth/register`, `/auth/login` and `/auth/demo*` endpoints need
+All endpoints except `/health` and the `/auth/register`, `/auth/login`, `/auth/demo*` and `/auth/guest` endpoints need
 `Authorization: Bearer <JWT>`. `/admin/*` needs the ADMIN role and returns 403 for anyone
 else. List endpoints accept `?page=&size=`. The AI endpoints read an optional
 `X-Demo-Time` header: `08:30` means that time on a weekday, and `Sat 12:00` picks a day.
@@ -175,7 +181,7 @@ The full interactive spec is at `/docs`.
 
 | Area | Endpoints |
 |---|---|
-| Auth | `POST /auth/register`, `POST /auth/login` (rate limited), `GET /auth/me`, `GET /auth/demo`, `POST /auth/demo-login` (only when `DEMO_LOGIN_ENABLED=true`) |
+| Auth | `POST /auth/register`, `POST /auth/login` (rate limited), `GET /auth/me`, `GET /auth/demo`, `POST /auth/demo-login` (only when `DEMO_LOGIN_ENABLED=true`), `POST /auth/guest` (only when `GUEST_LOGIN_ENABLED=true`) |
 | Tracking | `GET /buses`, `GET /buses/live`, `GET /buses/{id}/location`, `WS /ws/tracking?token=`, `WS /ws/notifications?token=` |
 | Routes & stops | `GET /routes`, `GET /routes/all/detail`, `GET /routes/{id}`, `GET /routes/search?source=&destination=`, `GET /stops`, `GET /stops/nearby?lat=&lon=&radius_m=` |
 | ETA | `GET /eta?bus_id=&stop_id=`, `GET /eta/bus/{id}`, `GET /stops/{id}/arrivals` |
@@ -244,11 +250,11 @@ Most errors are between neighbouring classes. LOW and HIGH are almost never conf
 
 ## Testing and performance
 
-- **Backend:** `cd backend && pytest` runs **67 tests**. They cover auth and bcrypt,
+- **Backend:** `cd backend && pytest` runs **69 tests**. They cover auth and bcrypt,
   rate limiting, 403 role guards on every admin endpoint, the ETA math, the nearby-stop
   radius, route search, alert thresholds and hysteresis, audit logging (including rollback
   on failure), SOS, analytics and the AI scoring.
-- **Frontend:** `cd frontend && npm test` runs **6 Vitest tests**.
+- **Frontend:** `cd frontend && npm test` runs **7 Vitest tests**.
 - The results are mapped to test IDs in [docs/TEST_REPORT.md](docs/TEST_REPORT.md).
 
 **Load test (NFR01).** [scripts/locustfile.py](scripts/locustfile.py): 50 users, spawn rate

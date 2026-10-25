@@ -8,6 +8,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<User>;
   register: (name: string, email: string, password: string, phone?: string) => Promise<User>;
   demoLogin: (role: "COMMUTER" | "ADMIN") => Promise<User>;
+  guestLogin: () => Promise<User>;
   logout: () => void;
 }
 
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register: (name, email, password, phone) =>
       post<TokenOut>("/auth/register", { name, email, password, phone: phone || null }).then(accept),
     demoLogin: (role) => post<TokenOut>("/auth/demo-login", { role }).then(accept),
+    guestLogin: () => post<TokenOut>("/auth/guest").then(accept),
     logout: () => {
       tokenStore.set(null);
       setUser(null);
@@ -55,3 +57,6 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 }
+
+/** Guests ("Skip sign-in") get a temporary account on this domain. */
+export const isGuest = (u: User | null) => !!u?.email.endsWith("@guest.catchmybus.local");

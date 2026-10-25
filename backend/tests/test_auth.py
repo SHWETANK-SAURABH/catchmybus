@@ -74,7 +74,7 @@ def test_api_prefix_is_stripped_for_vercel_routing(client, commuter_headers):
 
 
 def test_demo_login_disabled_by_default(client):
-    assert client.get("/auth/demo").json() == {"enabled": False}
+    assert client.get("/auth/demo").json()["enabled"] is False
     assert client.post("/auth/demo-login", json={"role": "COMMUTER"}).status_code == 404
 
 
@@ -82,7 +82,7 @@ def test_demo_login_signs_in_seeded_accounts(client, monkeypatch):
     from app.config import get_settings
 
     monkeypatch.setattr(get_settings(), "demo_login_enabled", True)
-    assert client.get("/auth/demo").json() == {"enabled": True}
+    assert client.get("/auth/demo").json()["enabled"] is True
     r = client.post("/auth/demo-login", json={"role": "COMMUTER"})
     assert r.status_code == 200 and r.json()["user"]["email"] == "arun@mail.com"
     admin = client.post("/auth/demo-login", json={"role": "ADMIN"}).json()
@@ -90,3 +90,22 @@ def test_demo_login_signs_in_seeded_accounts(client, monkeypatch):
     h = {"Authorization": f"Bearer {admin['access_token']}"}
     assert client.get("/admin/buses", headers=h).status_code == 200
     assert client.post("/auth/demo-login", json={"role": "ROOT"}).status_code == 422
+
+
+def test_guest_login_disabled_by_default(client):
+    assert client.get("/auth/demo").json() == {"enabled": False, "guest": False}
+    assert client.post("/auth/guest").status_code == 404
+
+
+def test_guest_login_creates_separate_commuters(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "guest_login_enabled", True)
+    a, b = client.post("/auth/guest").json(), client.post("/auth/guest").json()
+    assert a["user"]["role"] == "COMMUTER" and a["user"]["name"] == "Guest"
+    assert a["user"]["id"] != b["user"]["id"]  # each visitor gets their own account
+    ha = {"Authorization": f"Bearer {a['access_token']}"}
+    hb = {"Authorization": f"Bearer {b['access_token']}"}
+    assert client.post("/favourites", json={"type": "ROUTE", "route_id": 1}, headers=ha).status_code == 201
+    assert client.get("/favourites", headers=hb).json() == []  # not shared
+    assert client.get("/admin/buses", headers=ha).status_code == 403  # guests are never admins

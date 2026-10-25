@@ -1,6 +1,6 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
-import { useAuth } from "../lib/auth";
+import { isGuest, useAuth } from "../lib/auth";
 import { NotificationBell, Toasts } from "./NotificationBell";
 import SosButton from "./SosButton";
 import DemoTimeSelect from "./DemoTimeSelect";
@@ -10,6 +10,8 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const guest = isGuest(user);
   return (
     <div className="flex min-h-screen flex-col">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[4000] focus:rounded focus:bg-white focus:p-2 focus:text-black">
@@ -30,8 +32,15 @@ export default function Layout({ children }: { children: ReactNode }) {
             <DemoTimeSelect />
             {user?.role === "COMMUTER" && <SosButton />}
             <NotificationBell />
-            <span className="hidden text-sm text-slate-500 sm:inline">{user?.name} · {user?.role}</span>
-            <button className="btn-ghost" onClick={logout}>Logout</button>
+            {guest ? (
+              <button className="btn-primary" onClick={() => { logout(); navigate("/register"); }}
+                title="You're browsing as a guest. Create an account to keep your favourites and trips.">
+                Create account
+              </button>
+            ) : (
+              <span className="hidden text-sm text-slate-500 sm:inline">{user?.name} · {user?.role}</span>
+            )}
+            <button className="btn-ghost" onClick={logout}>{guest ? "Exit guest" : "Logout"}</button>
           </div>
         </div>
       </header>

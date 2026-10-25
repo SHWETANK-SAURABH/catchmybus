@@ -55,3 +55,23 @@ describe("Login page", () => {
     expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });
 });
+
+describe("Login shortcuts", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("shows Skip sign-in and demo accounts when the server enables them", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      new Response(JSON.stringify({ enabled: true, guest: true }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <AuthProvider>
+            <Login />
+          </AuthProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByRole("button", { name: /Skip sign-in/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Demo admin/ })).toBeInTheDocument();
+  });
+});

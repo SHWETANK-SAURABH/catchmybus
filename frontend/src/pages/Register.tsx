@@ -28,7 +28,7 @@ export default function Register() {
   }
 
   return (
-    <AuthCard title="Create your account">
+    <AuthCard title="Create your account" subtitle="Save favourite routes, trip history and alerts.">
       <form onSubmit={onSubmit} className="space-y-4" aria-label="Registration form">
         <div>
           <label htmlFor="name" className="label">Name</label>
@@ -48,11 +48,11 @@ export default function Register() {
             value={form.password} onChange={set("password")} />
         </div>
         {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-        <button type="submit" className="btn-primary w-full" disabled={busy}>
+        <button type="submit" className="btn-primary w-full py-2.5" disabled={busy}>
           {busy ? "Creating…" : "Register"}
         </button>
       </form>
-      <p className="mt-4 text-center text-sm">
+      <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
         Already registered? <Link to="/login" className="font-medium text-brand-600 underline dark:text-brand-100">Sign in</Link>
       </p>
     </AuthCard>
