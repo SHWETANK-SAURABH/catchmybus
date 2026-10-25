@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 720
 
+    timezone: str = "Asia/Kolkata"
     frontend_origin: str = "http://localhost:5173"
     login_rate_limit_per_min: int = 10
 

@@ -1,4 +1,5 @@
 """FastAPI entrypoint: wires routers, middleware and background services together."""
+import asyncio
 import logging
 import time
 from contextlib import asynccontextmanager
@@ -11,7 +12,9 @@ from .config import get_settings
 from .db import SessionLocal, init_db
 from .logging_conf import setup_logging
 from .models import User
-from .routers import auth
+from .routers import auth, routes, tracking
+from .services.hub import hub
+from .simulator import simulator
 
 setup_logging()
 log = logging.getLogger("catchmybus.api")
@@ -33,7 +36,15 @@ def ensure_seeded():
 async def lifespan(app: FastAPI):
     init_db()
     ensure_seeded()
+    hub.loop = asyncio.get_running_loop()
+    tasks = []
+    if get_settings().simulator_enabled:
+        tasks.append(asyncio.create_task(simulator.run(), name="simulator"))
+    else:
+        simulator.sync_with_db()  # positions still available, buses just don't move
     yield
+    for t in tasks:
+        t.cancel()
 
 
 app = FastAPI(title="CatchMyBus API", version="1.0.0", lifespan=lifespan)
@@ -66,3 +77,5 @@ def health():
 
 
 app.include_router(auth.router)
+app.include_router(tracking.router)
+app.include_router(routes.router)
