@@ -1,0 +1,18 @@
+{
+  "_note": "APPROXIMATE seed coordinates around Vellore, Tamil Nadu. Edit freely; re-run `make seed` to reload.",
+  "stops": [
+    {"key": "katpadi_jn",     "name": "Katpadi Junction",          "lat": 12.9716, "lon": 79.1376},
+    {"key": "chittoor_bs",    "name": "Katpadi Chittoor Bus Stand", "lat": 12.9752, "lon": 79.1411},
+    {"key": "gandhi_nagar",   "name": "Gandhi Nagar",              "lat": 12.9585, "lon": 79.1372},
+    {"key": "silk_mill",      "name": "Silk Mill",                 "lat": 12.9530, "lon": 79.1388},
+    {"key": "viruthampet",    "name": "Viruthampet",               "lat": 12.9475, "lon": 79.1392},
+    {"key": "green_circle",   "name": "Green Circle",              "lat": 12.9418, "lon": 79.1362},
+    {"key": "new_bus_stand",  "name": "Vellore New Bus Stand",     "lat": 12.9343, "lon": 79.1366},
+    {"key": "thottapalayam",  "name": "Thottapalayam",             "lat": 12.9290, "lon": 79.1398},
+    {"key": "cmc",            "name": "CMC Hospital",              "lat": 12.9246, "lon": 79.1356},
+    {"key": "vit",            "name": "VIT Main Gate",             "lat": 12.9692, "lon": 79.1559},
+    {"key": "kangeyanallur",  "name": "Kangeyanallur",             "lat": 12.9640, "lon": 79.1488},
+    {"key": "kalinjur",       "name": "Kalinjur",                  "lat": 12.9668, "lon": 79.1312},
+    {"key": "brahmapuram",    "name": "Brahmapuram",               "lat": 12.9795, "lon": 79.1502}
+  ]
+}

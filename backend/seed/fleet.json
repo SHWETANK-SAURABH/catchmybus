@@ -1,0 +1,19 @@
+{
+  "_note": "Demo drivers and buses. route_index is the 0-based index into routes.json.",
+  "drivers": [
+    {"name": "Murugan K",   "phone": "9800000001", "license_no": "TN23-DL-0001"},
+    {"name": "Selvam R",    "phone": "9800000002", "license_no": "TN23-DL-0002"},
+    {"name": "Lakshmi P",   "phone": "9800000003", "license_no": "TN23-DL-0003"},
+    {"name": "Ravi S",      "phone": "9800000004", "license_no": "TN23-DL-0004"},
+    {"name": "Anitha M",    "phone": "9800000005", "license_no": "TN23-DL-0005"},
+    {"name": "Karthik V",   "phone": "9800000006", "license_no": "TN23-DL-0006"}
+  ],
+  "buses": [
+    {"bus_number": "TN23-N-1101", "capacity": 55, "driver_index": 0, "route_index": 0},
+    {"bus_number": "TN23-N-1102", "capacity": 55, "driver_index": 1, "route_index": 0},
+    {"bus_number": "TN23-N-2201", "capacity": 60, "driver_index": 2, "route_index": 1},
+    {"bus_number": "TN23-N-2202", "capacity": 60, "driver_index": 3, "route_index": 1},
+    {"bus_number": "TN23-N-3301", "capacity": 45, "driver_index": 4, "route_index": 2},
+    {"bus_number": "TN23-N-3302", "capacity": 45, "driver_index": 5, "route_index": 2}
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "_note": "APPROXIMATE seed routes. Stops refer to keys in stops.json. A route whose first and last stop are the same is treated as a loop.",
+  "routes": [
+    {
+      "name": "R1 Katpadi - Vellore CMC",
+      "source": "Katpadi Junction",
+      "destination": "CMC Hospital",
+      "stops": ["katpadi_jn", "gandhi_nagar", "silk_mill", "viruthampet", "green_circle", "new_bus_stand", "thottapalayam", "cmc"]
+    },
+    {
+      "name": "R2 VIT - Vellore Bus Stand",
+      "source": "VIT Main Gate",
+      "destination": "Vellore New Bus Stand",
+      "stops": ["vit", "kangeyanallur", "gandhi_nagar", "silk_mill", "viruthampet", "green_circle", "new_bus_stand"]
+    },
+    {
+      "name": "R3 Katpadi - Gandhi Nagar Loop",
+      "source": "Katpadi Junction",
+      "destination": "Katpadi Junction",
+      "stops": ["katpadi_jn", "kalinjur", "gandhi_nagar", "kangeyanallur", "brahmapuram", "chittoor_bs", "katpadi_jn"]
+    }
+  ]
+}
