@@ -64,6 +64,8 @@ def test_inject_delay(db):
     sim.sync_with_db(db)
     bus_id = next(iter(sim.buses))
     assert sim.inject_delay(bus_id, 15)
-    assert sim.buses[bus_id].injected_delay_min == 15
-    assert sim.buses[bus_id].slow_left > 0
+    pos_before = sim.buses[bus_id].s
+    sim.tick(2.0)
+    assert sim.buses[bus_id].s == pos_before  # held in place
+    assert sim.cache.get_position(bus_id)["delay_min"] == pytest.approx(15, abs=0.1)
     assert not sim.inject_delay(9999, 5)

@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import "./index.css";
 import App from "./App";
 import { AuthProvider } from "./lib/auth";
+import { NotificationProvider } from "./lib/notifications";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -16,7 +17,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

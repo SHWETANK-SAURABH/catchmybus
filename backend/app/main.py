@@ -12,7 +12,9 @@ from .config import get_settings
 from .db import SessionLocal, init_db
 from .logging_conf import setup_logging
 from .models import User
-from .routers import auth, routes, tracking
+from .ml.predictor import predictor
+from .routers import auth, eta, favourites, notifications, routes, stops, tracking
+from .services.alert_engine import alert_engine
 from .services.hub import hub
 from .simulator import simulator
 
@@ -37,8 +39,11 @@ async def lifespan(app: FastAPI):
     init_db()
     ensure_seeded()
     hub.loop = asyncio.get_running_loop()
+    predictor.load()
     tasks = []
     if get_settings().simulator_enabled:
+        if alert_engine not in simulator.listeners:
+            simulator.listeners.append(alert_engine)
         tasks.append(asyncio.create_task(simulator.run(), name="simulator"))
     else:
         simulator.sync_with_db()  # positions still available, buses just don't move
@@ -78,4 +83,8 @@ def health():
 
 app.include_router(auth.router)
 app.include_router(tracking.router)
+app.include_router(stops.router)  # before routes: /routes/search must win over /routes/{id}
 app.include_router(routes.router)
+app.include_router(eta.router)
+app.include_router(favourites.router)
+app.include_router(notifications.router)

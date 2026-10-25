@@ -1,20 +1,42 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { RouteDetail } from "../lib/types";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import LiveMap from "../components/LiveMap";
+import NearbyStops from "../components/NearbyStops";
+import SearchBar from "../components/SearchBar";
 import { useTracking } from "../hooks/useTracking";
+import { useRouteDetails } from "../lib/queries";
 
+/** Full-screen live map with a search + nearby-stops panel (bottom sheet on phones). */
 export default function Home() {
   const { buses, connected } = useTracking();
-  const routes = useQuery({ queryKey: ["routes-detail"], queryFn: () => api<RouteDetail[]>("/routes/all/detail") });
+  const routes = useRouteDetails();
+  const navigate = useNavigate();
+  const [location, setLocation] = useState<[number, number] | null>(null);
+  const [panelOpen, setPanelOpen] = useState(true);
 
   return (
     <div className="relative h-[calc(100vh-57px)]">
-      <LiveMap routes={routes.data ?? []} buses={Object.values(buses)} />
-      <div className="absolute bottom-3 left-3 z-[500] rounded-md bg-white/90 px-2 py-1 text-xs shadow dark:bg-slate-800/90"
-        role="status">
-        {connected ? "● Live" : "○ Reconnecting…"} · {Object.keys(buses).length} buses
-      </div>
+      <LiveMap routes={routes.data ?? []} buses={Object.values(buses)} userLocation={location}
+        onBusClick={(b) => navigate(`/bus/${b.bus_id}`)} />
+
+      <aside aria-label="Search and nearby stops"
+        className="absolute inset-x-2 bottom-2 z-[500] max-h-[60%] overflow-auto sm:inset-x-auto sm:bottom-auto sm:left-3 sm:top-3 sm:max-h-[calc(100%-1.5rem)] sm:w-80">
+        <div className="card space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs" role="status">
+              {connected ? "🟢 Live" : "🟠 Reconnecting…"} · {Object.keys(buses).length} buses
+            </span>
+            <button className="text-xs underline sm:hidden" aria-expanded={panelOpen} onClick={() => setPanelOpen(!panelOpen)}>
+              {panelOpen ? "Hide" : "Show"} panel
+            </button>
+          </div>
+          <div className={panelOpen ? "space-y-4" : "hidden sm:block sm:space-y-4"}>
+            <SearchBar />
+            <hr className="border-slate-200 dark:border-slate-700" />
+            <NearbyStops location={location} onLocation={setLocation} />
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }

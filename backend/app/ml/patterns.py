@@ -66,13 +66,15 @@ def crowd_level(fraction: float) -> str:
 
 def expected_delay(hour: int, day_of_week: int, route_id: int, segment_distance_m: float,
                    recent_speed_kmh: float, traffic_factor: float = 1.0) -> float:
-    """Expected delay in minutes for the rest of a trip.
+    """Expected extra delay in minutes over the remaining `segment_distance_m`.
 
-    Delay grows with peak-hour demand, traffic, distance still to go, and when the
-    bus is currently slower than the 25 km/h planning speed.
+    Per km still to drive:  (0.2 + 0.8 * demand) * traffic  +  1.5 * slow_penalty
+    where demand is the peak-hour/route factor and slow_penalty is how far the bus's
+    recent speed is below the 25 km/h planning speed (0..1). Zero distance -> zero delay,
+    so an ETA converges to 0 as the bus arrives.
     """
     demand = hourly_demand(hour, day_of_week) * route_popularity(route_id)
     km = segment_distance_m / 1000.0
     slow_penalty = max(0.0, (25.0 - recent_speed_kmh) / 25.0)  # 0 when at/above planning speed
-    delay = (0.6 + 2.5 * demand) * traffic_factor + 0.5 * km * traffic_factor + 3.0 * slow_penalty * km
+    delay = km * ((0.2 + 0.8 * demand) * traffic_factor + 1.5 * slow_penalty)
     return max(0.0, delay)

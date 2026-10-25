@@ -6,6 +6,8 @@ Every tick (default 2 s) each bus:
   * accelerates towards a randomly drifting cruise speed (15-35 km/h),
   * stops and dwells at every bus stop it reaches, updating its passenger load,
   * turns around at the end of the route (or wraps round, for a loop route).
+Delays: random events drop the speed to 30% for 2-4 minutes (slow traffic); the admin
+"simulate delay" control holds the bus still for N minutes (an incident/jam).
 Positions go to the cache and out over WebSocket; history is stored every ~10 s.
 """
 import asyncio
@@ -47,8 +49,8 @@ class BusState:
     cruise_kmh: float = 25.0
     speed_ema: float = 20.0  # smoothed speed including stops, used for ETA
     dwell_left: float = 0.0  # seconds left standing at the current stop
-    slow_left: float = 0.0  # seconds left in a delay event (slow traffic)
-    injected_delay_min: float = 0.0  # "running late by" minutes (manual or random events)
+    slow_left: float = 0.0  # seconds left in a random slow-traffic event
+    hold_left: float = 0.0  # seconds left of a manual delay (bus held still)
     load: int = 0
     lat: float = 0.0
     lon: float = 0.0
@@ -59,7 +61,7 @@ class BusState:
         return {
             "bus_id": self.bus_id, "bus_number": self.bus_number, "route_id": self.route_id,
             "lat": round(self.lat, 6), "lon": round(self.lon, 6), "heading": round(self.heading, 1),
-            "speed_kmh": round(self.speed_kmh, 1), "delay_min": round(self.injected_delay_min, 1),
+            "speed_kmh": round(self.speed_kmh, 1), "delay_min": round(self.hold_left / 60, 1),
             "load": self.load, "capacity": self.capacity, "next_stop_id": self.next_stop_id,
             "updated_at": datetime.now(timezone.utc).isoformat(),
             # internal fields used by the ETA service
@@ -125,13 +127,13 @@ class Simulator:
 
     # ---------------- control ----------------
     def inject_delay(self, bus_id: int, minutes: float) -> bool:
-        """Mark a bus as running `minutes` late and slow it down for a minute (demo control)."""
+        """Hold a bus where it is for `minutes` real minutes (demo control; 0 clears it)."""
         with self.lock:
             st = self.buses.get(bus_id)
             if not st:
                 return False
-            st.injected_delay_min = float(minutes)
-            st.slow_left = 60.0 if minutes > 0 else 0.0
+            st.hold_left = float(minutes) * 60.0
+            st.speed_kmh = 0.0
             self.cache.set_position(bus_id, st.snapshot())
             return True
 
@@ -142,11 +144,16 @@ class Simulator:
         now = now_local()
         with self.lock:
             for st in self.buses.values():
-                if s.sim_random_delays and self.rng.random() < dt / 3600.0:  # ~1 event/bus/hour
-                    st.injected_delay_min = max(st.injected_delay_min, round(self.rng.uniform(2, 6), 1))
-                    st.slow_left = 60.0
+                if s.sim_random_delays and st.slow_left <= 0 and self.rng.random() < dt / 3600.0:
+                    st.slow_left = self.rng.uniform(120, 240)  # ~1 slow-traffic event per bus-hour
                     log.info("random delay event", extra={"fields": {"bus_id": st.bus_id,
-                                                                     "minutes": st.injected_delay_min}})
+                                                                     "seconds": round(st.slow_left)}})
+                if st.hold_left > 0:  # manual delay: bus stuck, recent-speed estimate frozen
+                    st.hold_left = max(0.0, st.hold_left - dt)
+                    st.speed_kmh = 0.0
+                    self._update_position(st)
+                    self.cache.set_position(st.bus_id, st.snapshot())
+                    continue
                 if st.dwell_left > 0:
                     st.dwell_left -= dt
                     st.speed_kmh = 0.0
@@ -184,7 +191,6 @@ class Simulator:
         target = frac * st.capacity * self.rng.uniform(0.85, 1.15)
         st.load = int(min(1.3 * st.capacity, max(0, 0.5 * st.load + 0.5 * target)))
         if terminal:
-            st.injected_delay_min = 0.0  # a new trip starts on time
             if g.is_loop:
                 st.s = 0.0
             else:
@@ -211,7 +217,7 @@ class Simulator:
     def write_history(self):
         """Store one history row per bus and stamp buses.last_gps_sync_at."""
         with self.lock:
-            snaps = [(st.bus_id, st.lat, st.lon, st.speed_kmh, st.injected_delay_min, st.load)
+            snaps = [(st.bus_id, st.lat, st.lon, st.speed_kmh, round(st.hold_left / 60, 2), st.load)
                      for st in self.buses.values()]
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         with SessionLocal() as db:
