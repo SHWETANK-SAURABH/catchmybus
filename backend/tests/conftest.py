@@ -4,6 +4,7 @@ import os
 os.environ.update({
     "DATABASE_URL": "sqlite://",
     "SIMULATOR_ENABLED": "false",
+    "SIM_RANDOM_DELAYS": "false",
     "JWT_SECRET": "test-secret-not-for-production",
     "SEED_ADMIN_PASSWORD": "AdminPass1",
     "SEED_COMMUTER_PASSWORD": "ArunPass1",
@@ -30,7 +31,12 @@ def db():
 
 @pytest.fixture()
 def client(db):
+    from app.cache import cache
+    from app.simulator import simulator
+
     login_limiter.reset()
+    simulator.buses.clear()  # fresh simulator state for every test
+    cache.clear()
     with TestClient(app) as c:
         yield c
 

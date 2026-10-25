@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "../lib/auth";
 import { NotificationBell, Toasts } from "./NotificationBell";
+import SosButton from "./SosButton";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-2 py-1 text-sm ${isActive ? "bg-brand-600 text-white" : "hover:bg-slate-200 dark:hover:bg-slate-700"}`;
@@ -18,8 +19,10 @@ export default function Layout({ children }: { children: ReactNode }) {
           <nav aria-label="Main" className="flex flex-wrap items-center gap-1">
             <NavLink to="/" end className={linkClass}>Map</NavLink>
             <NavLink to="/favourites" className={linkClass}>Favourites</NavLink>
+            {user?.role === "ADMIN" && <NavLink to="/admin" className={linkClass}>Admin</NavLink>}
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            {user?.role === "COMMUTER" && <SosButton />}
             <NotificationBell />
             <span className="hidden text-sm text-slate-500 sm:inline">{user?.name} · {user?.role}</span>
             <button className="btn-ghost" onClick={logout}>Logout</button>

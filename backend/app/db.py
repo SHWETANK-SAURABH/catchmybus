@@ -1,5 +1,5 @@
 """Data access layer: SQLAlchemy engine, session factory and FastAPI dependency."""
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -16,7 +16,14 @@ def make_engine(url: str):
         kwargs = {"connect_args": {"check_same_thread": False}}
         if url in ("sqlite://", "sqlite:///:memory:"):
             kwargs["poolclass"] = StaticPool
-        return create_engine(url, **kwargs)
+        eng = create_engine(url, **kwargs)
+
+        @event.listens_for(eng, "connect")
+        def _fk_on(dbapi_conn, _record):
+            # SQLite ignores foreign keys (and ON DELETE CASCADE) unless asked.
+            dbapi_conn.execute("PRAGMA foreign_keys=ON")
+
+        return eng
     return create_engine(url, pool_pre_ping=True)
 
 
