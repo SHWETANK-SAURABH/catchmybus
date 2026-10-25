@@ -13,8 +13,9 @@ from .db import SessionLocal, init_db
 from .logging_conf import setup_logging
 from .models import User
 from .ml.predictor import predictor
-from .routers import admin, auth, eta, favourites, notifications, routes, sos, stops, tracking
+from .routers import admin, ai, auth, eta, favourites, notifications, routes, sos, stops, tracking
 from .services.alert_engine import alert_engine
+from .services.crowd_job import crowd_job
 from .services.hub import hub
 from .simulator import simulator
 
@@ -42,8 +43,9 @@ async def lifespan(app: FastAPI):
     predictor.load()
     tasks = []
     if get_settings().simulator_enabled:
-        if alert_engine not in simulator.listeners:
-            simulator.listeners.append(alert_engine)
+        for listener in (alert_engine, crowd_job):
+            if listener not in simulator.listeners:
+                simulator.listeners.append(listener)
         tasks.append(asyncio.create_task(simulator.run(), name="simulator"))
     else:
         simulator.sync_with_db()  # positions still available, buses just don't move
@@ -89,4 +91,5 @@ app.include_router(eta.router)
 app.include_router(favourites.router)
 app.include_router(notifications.router)
 app.include_router(sos.router)
+app.include_router(ai.router)
 app.include_router(admin.router)

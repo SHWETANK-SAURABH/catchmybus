@@ -1,0 +1,12 @@
+prompt
+.env
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+frontend
+backend/*.db
+backend/models/*.joblib
+backend/ml_data/*.csv
+backups
+.git

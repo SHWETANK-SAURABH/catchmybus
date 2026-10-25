@@ -5,19 +5,23 @@ import NearbyStops from "../components/NearbyStops";
 import SearchBar from "../components/SearchBar";
 import { useTracking } from "../hooks/useTracking";
 import { useRouteDetails } from "../lib/queries";
+import { useCrowdAll } from "../components/CrowdBadge";
+import { crowdStyle } from "../lib/colors";
 
 /** Full-screen live map with a search + nearby-stops panel (bottom sheet on phones). */
 export default function Home() {
   const { buses, connected } = useTracking();
   const routes = useRouteDetails();
   const navigate = useNavigate();
+  const crowd = useCrowdAll().data;
   const [location, setLocation] = useState<[number, number] | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
 
   return (
     <div className="relative h-[calc(100vh-57px)]">
       <LiveMap routes={routes.data ?? []} buses={Object.values(buses)} userLocation={location}
-        onBusClick={(b) => navigate(`/bus/${b.bus_id}`)} />
+        onBusClick={(b) => navigate(`/bus/${b.bus_id}`)}
+        busDot={(b) => (crowd?.[b.bus_id] ? crowdStyle[crowd[b.bus_id].level].dot : undefined)} />
 
       <aside aria-label="Search and nearby stops"
         className="absolute inset-x-2 bottom-2 z-[500] max-h-[60%] overflow-auto sm:inset-x-auto sm:bottom-auto sm:left-3 sm:top-3 sm:max-h-[calc(100%-1.5rem)] sm:w-80">

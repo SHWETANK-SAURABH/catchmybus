@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { api, post } from "../lib/api";
-import type { Eta } from "../lib/types";
+import type { Crowd, Delay, Eta } from "../lib/types";
 import { useBusMeta, useFavourites, useRouteDetails } from "../lib/queries";
 import { useTracking } from "../hooks/useTracking";
 import { fmtDistance, fmtEta } from "../lib/format";
 import LiveMap from "../components/LiveMap";
 import Modal from "../components/Modal";
+import CrowdBadge from "../components/CrowdBadge";
 
 /** Bus detail: live position, ETA per stop, delay, and Track / Set alert / Favourite actions. */
 export default function BusDetail() {
@@ -26,8 +27,10 @@ export default function BusDetail() {
     queryFn: () => api<Eta[]>(`/eta/bus/${busId}`),
     refetchInterval: 4000,
   });
+  const crowd = useQuery({ queryKey: ["crowd", busId], queryFn: () => api<Crowd>(`/ai/crowd?bus_id=${busId}`), refetchInterval: 15000 });
+  const delay = useQuery({ queryKey: ["delay", busId], queryFn: () => api<Delay>(`/ai/delay?bus_id=${busId}`), refetchInterval: 5000 });
   const stopName = (id: number) => route?.stops.find((s) => s.stop.id === id)?.stop.name ?? `Stop ${id}`;
-  const maxDelay = Math.max(0, ...(etas.data ?? []).map((e) => e.predicted_delay_min));
+  const maxDelay = delay.data?.total_delay_min ?? 0;
   const isFav = route ? !!favs.find("ROUTE", route.id) : false;
 
   return (
@@ -43,6 +46,10 @@ export default function BusDetail() {
           <div>
             <h1 id="bus-h" className="text-xl font-semibold">🚌 {meta?.bus_number ?? `Bus ${busId}`}</h1>
             {route && <Link to={`/routes/${route.id}`} className="text-sm text-brand-600 underline dark:text-brand-100">{route.name}</Link>}
+            <div className="mt-1">
+              <CrowdBadge level={crowd.data?.level}
+                title={crowd.data ? `Predicted for ${crowd.data.hour}:00 (${crowd.data.source})` : undefined} />
+            </div>
           </div>
           {live ? (
             <dl className="grid grid-cols-3 gap-2 text-center text-sm">

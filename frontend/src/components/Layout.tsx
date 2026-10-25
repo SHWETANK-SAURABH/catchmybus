@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useAuth } from "../lib/auth";
 import { NotificationBell, Toasts } from "./NotificationBell";
 import SosButton from "./SosButton";
+import DemoTimeSelect from "./DemoTimeSelect";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-2 py-1 text-sm ${isActive ? "bg-brand-600 text-white" : "hover:bg-slate-200 dark:hover:bg-slate-700"}`;
@@ -22,6 +23,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             {user?.role === "ADMIN" && <NavLink to="/admin" className={linkClass}>Admin</NavLink>}
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <DemoTimeSelect />
             {user?.role === "COMMUTER" && <SosButton />}
             <NotificationBell />
             <span className="hidden text-sm text-slate-500 sm:inline">{user?.name} · {user?.role}</span>
