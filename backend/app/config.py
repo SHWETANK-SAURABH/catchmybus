@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 720
 
     timezone: str = "Asia/Kolkata"
+    # Public path prefix the API may be reached under (Vercel routes /api/* to the backend).
+    api_prefix: str = "/api"
     frontend_origin: str = "http://localhost:5173"
     login_rate_limit_per_min: int = 10
 

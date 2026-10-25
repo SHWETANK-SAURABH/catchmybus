@@ -62,3 +62,12 @@ def test_rate_limiter_window_expires():
 
 def test_health(client):
     assert client.get("/health").json() == {"status": "ok"}
+
+
+def test_api_prefix_is_stripped_for_vercel_routing(client, commuter_headers):
+    # Vercel forwards /api/* unchanged; the same routes must answer with and without the prefix.
+    assert client.get("/api/health").json() == {"status": "ok"}
+    assert client.get("/api/buses", headers=commuter_headers).json() == client.get("/buses", headers=commuter_headers).json()
+    assert client.get("/apix/health").status_code == 404  # only the exact prefix is stripped
+    with client.websocket_connect("/api/ws/tracking?token=" + commuter_headers["Authorization"].split()[1]) as ws:
+        assert ws.receive_json()["type"] == "positions"

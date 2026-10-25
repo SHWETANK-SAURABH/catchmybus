@@ -56,6 +56,29 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="CatchMyBus API", version="1.0.0", lifespan=lifespan)
 
+
+class StripPrefixMiddleware:
+    """Serve the API under a public path prefix (e.g. /api on Vercel) without changing routes.
+
+    Vercel forwards `/api/buses` to the backend unchanged; this rewrites it to `/buses`
+    (HTTP and WebSocket) and sets root_path so /docs links still work. Requests without
+    the prefix, as in local development, pass through untouched.
+    """
+
+    def __init__(self, app, prefix: str):
+        self.app = app
+        self.prefix = prefix.rstrip("/")
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        if self.prefix and scope["type"] in ("http", "websocket") and (
+                path == self.prefix or path.startswith(self.prefix + "/")):
+            scope = dict(scope, path=path[len(self.prefix):] or "/", root_path=self.prefix)
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(StripPrefixMiddleware, prefix=get_settings().api_prefix)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[get_settings().frontend_origin],  # locked to the frontend origin

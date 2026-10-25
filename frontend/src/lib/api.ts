@@ -1,7 +1,11 @@
 // Small fetch wrapper: adds the JWT and the optional "demo time" header to every call.
 
-export const API_URL: string = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-export const WS_URL = API_URL.replace(/^http/, "ws");
+// Absolute in local dev (http://localhost:8000); relative ("/api") when the frontend and
+// backend share one origin, as on Vercel.
+export const API_URL: string = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+export const WS_URL = API_URL.startsWith("/")
+  ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}${API_URL}`
+  : API_URL.replace(/^http/, "ws");
 
 const TOKEN_KEY = "cmb_token";
 const DEMO_TIME_KEY = "cmb_demo_time";
