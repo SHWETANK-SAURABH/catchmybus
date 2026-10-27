@@ -169,7 +169,19 @@ Open two browser windows side by side: **A** (normal) and **B** (private/incogni
 | 4:15 | **B:** go to **Fleet**, edit a bus's capacity, then open **Audit log**. | The edit shows with timestamp, admin id and the before/after change. Swagger also shows `/admin/*` returning **403** for a commuter token. |
 | 4:40 | **B:** open **Analytics**. | Ridership by hour (clear 8-10 and 17-19 peaks), ridership and average delay by route, crowd distribution, and model metrics with the synthetic-data disclaimer. |
 
-Screenshots of every step are in [docs/screenshots](docs/screenshots).
+Screenshots of every step are in [docs/screenshots](docs/screenshots):
+
+| Screen | File |
+|---|---|
+| Location consent dialog | [12-location-consent.png](docs/screenshots/12-location-consent.png) |
+| Route search results | [13-route-search.png](docs/screenshots/13-route-search.png) |
+| Crowd badge and delay prediction at 08:30 vs 14:00 | [14-crowd-delay-0830.png](docs/screenshots/14-crowd-delay-0830.png), [15-crowd-delay-1400.png](docs/screenshots/15-crowd-delay-1400.png) |
+| Delay alert toast | [16-delay-alert-toast.png](docs/screenshots/16-delay-alert-toast.png) |
+| Favourites page | [17-favourites.png](docs/screenshots/17-favourites.png) |
+| Admin console tables | [18-admin-tables.png](docs/screenshots/18-admin-tables.png) |
+| Announcements | [19-announcements.png](docs/screenshots/19-announcements.png) |
+| Audit log viewer | [20-audit-log-viewer.png](docs/screenshots/20-audit-log-viewer.png) |
+| Load test result (Locust) | [21-load-test-locust.png](docs/screenshots/21-load-test-locust.png) |
 
 ## API summary
 
@@ -262,13 +274,16 @@ Most errors are between neighbouring classes. LOW and HIGH are almost never conf
 
 | Endpoint | Requests | Failures | p50 | p95 | p99 |
 |---|---|---|---|---|---|
-| `GET /eta` | 1005 | 0 | 8 ms | **20 ms** | 39 ms |
-| `GET /buses` | 838 | 0 | 9 ms | **40 ms** | 53 ms |
-| `GET /buses/live` | 746 | 0 | 7 ms | 19 ms | 34 ms |
-| `GET /stops/nearby` | 267 | 0 | 9 ms | 22 ms | 38 ms |
-| All requests | 2906 | 0 | 8 ms | 34 ms | 98 ms |
+| `GET /eta` | 1019 | 0 | 9 ms | **28 ms** | 44 ms |
+| `GET /buses` | 760 | 0 | 9 ms | **43 ms** | 58 ms |
+| `GET /buses/live` | 672 | 0 | 8 ms | 20 ms | 47 ms |
+| `GET /stops/nearby` | 231 | 0 | 9 ms | 26 ms | 38 ms |
+| All requests | 2732 | 0 | 9 ms | 38 ms | 2100 ms |
 
-Both hot paths are well under the 500 ms p95 target.
+Both hot paths are well under the 500 ms p95 target. The high p99 for "All requests"
+comes from `GET /routes/all/detail` (about 2.1 s), which each user calls once at start-up,
+so all 50 hit it in the first few seconds of the ramp. It is not on the hot path.
+Full Locust report: [screenshot](docs/screenshots/21-load-test-locust.png).
 
 ## Requirements traceability
 

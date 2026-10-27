@@ -7,7 +7,7 @@
 | Backend (pytest) | `cd backend && pytest` | **69 passed**, 0 failed |
 | Frontend (Vitest) | `cd frontend && npm test` | **7 passed**, 0 failed |
 | AI tests without trained models (heuristic fallback) | `MODELS_DIR=<empty dir> pytest tests/test_ai.py` | 8 passed |
-| Load test (Locust, 50 users, 60 s) | `make loadtest` | 2906 requests, **0 failures**, p95 /eta 20 ms, /buses 40 ms |
+| Load test (Locust, 50 users, 60 s) | `make loadtest` | 2732 requests, **0 failures**, p95 /eta 28 ms, /buses 43 ms ([report](screenshots/21-load-test-locust.png)) |
 
 > **Note on IDs:** the FT/NFT numbering below follows the order of the requirements in the
 > project spec. Please check it against the test-case IDs in the Lab VII document and
@@ -44,12 +44,12 @@
 
 | ID | Requirement | Test case | Evidence | Result |
 |---|---|---|---|---|
-| NFT01 | NFR01 Performance | p95 < 500 ms for /eta and /buses under 50 concurrent users | Locust: /eta p95 20 ms, /buses p95 40 ms, 0 failures (README → Testing) | Pass |
+| NFT01 | NFR01 Performance | p95 < 500 ms for /eta and /buses under 50 concurrent users | Locust: /eta p95 28 ms, /buses p95 43 ms, 0 failures ([report](screenshots/21-load-test-locust.png)) | Pass |
 | NFT02 | NFR04 Password security | Stored hash is bcrypt (`$2…`), never the plain text | `test_register_creates_commuter_with_bcrypt_hash` | Pass |
 | NFT03 | Brute-force protection | 6th login attempt within a minute → 429; the window expires | `test_login_rate_limited`, `test_rate_limiter_window_expires` | Pass |
 | NFT04 | NFR14 Audit log | Every admin write is logged with admin id, timestamp and diff; a failed write leaves **no** audit row (same transaction); a simulated delay is audited | `test_admin_crud_writes_audit_log`, `test_failed_admin_write_leaves_no_audit_row`, `test_sim_delay_is_audited` | Pass |
 | NFT05 | NFR09 Modularity | Each service is its own router; the cache sits behind `ICache` | Code structure ([backend/app/routers](../backend/app/routers), [cache.py](../backend/app/cache.py)) | Pass (inspection) |
-| NFT06 | NFR13 Privacy | A consent dialog with a privacy note is shown before geolocation is requested | Manual: [screenshot flow](screenshots/02-home-map.png), `NearbyStops.tsx` | Pass (manual) |
+| NFT06 | NFR13 Privacy | A consent dialog with a privacy note is shown before geolocation is requested | Manual: [screenshot](screenshots/12-location-consent.png), `NearbyStops.tsx` | Pass (manual) |
 | NFT07 | NFR07/NFR10 Usability | Usable at 390 px width; dark theme follows the OS; labels, ARIA and a skip link on the main controls | Manual: [mobile screenshot](screenshots/08-mobile-home.png) | Pass (manual) |
 | NFT08 | NFR12 Backup | `scripts/backup.sh` writes a timestamped dump and keeps the newest 7 | Ran against SQLite on 2026-10-25: `backups/catchmybus-20261025-180519.db` written | Pass |
 | NFT09 | Availability / ops | `/health` returns ok; structured JSON logs per request | `test_health`, server logs | Pass |
