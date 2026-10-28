@@ -182,6 +182,9 @@ Screenshots of every step are in [docs/screenshots](docs/screenshots):
 | Announcements | [19-announcements.png](docs/screenshots/19-announcements.png) |
 | Audit log viewer | [20-audit-log-viewer.png](docs/screenshots/20-audit-log-viewer.png) |
 | Load test result (Locust) | [21-load-test-locust.png](docs/screenshots/21-load-test-locust.png) |
+| Project folder structure | [22-project-structure.png](docs/screenshots/22-project-structure.png) |
+| GPS simulator running | [23-gps-simulator-running.png](docs/screenshots/23-gps-simulator-running.png) |
+| Automated test run (pytest and Vitest) | [24-automated-test-run.png](docs/screenshots/24-automated-test-run.png) |
 
 ## API summary
 
